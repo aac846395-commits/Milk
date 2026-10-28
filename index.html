@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chauhan Dairy — Milk Supply Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#073B78">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chauhan Dairy">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root{
+    --bg:#F6FAF8;
+    --card:#FFFFFF;
+    --green:#2E9B6B;
+    --green-deep:#1F7A52;
+    --green-tint:#E7F5EE;
+    --blue:#3B6FA0;
+    --blue-tint:#E9F0F8;
+    --ink:#1E2430;
+    --ink-soft:#6B7280;
+    --line:#E4E8E6;
+    --amber:#D98A2B;
+    --amber-tint:#FBF0E1;
+    --red:#C1503D;
+    --red-tint:#FBE9E6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+    padding-bottom:74px;
+  }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  .wrap{ max-width:480px; margin:0 auto; padding:16px 14px 24px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* header */
+  .app-header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 14px 10px; max-width:480px; margin:0 auto;
+  }
+  .app-header .brand{ display:flex; align-items:center; gap:8px; }
+  .app-header .brand .dot{ width:10px;height:10px;border-radius:50%;background:var(--green); }
+  .app-header h1{ font-size:17px; font-weight:800; margin:0; letter-spacing:-0.01em; }
+  .app-header .date{ font-size:11px; color:var(--ink-soft); }
+  .icon-btn{
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    width:36px;height:36px; display:flex; align-items:center; justify-content:center;
+    font-size:16px; cursor:pointer;
+  }
+
+  /* cards */
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .greet{ font-size:19px; font-weight:700; margin:0 0 2px; }
+  .greet-sub{ font-size:12px; color:var(--ink-soft); margin:0 0 14px; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .stat{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  .stat .lbl{ font-size:11px; color:var(--ink-soft); font-weight:600; display:flex; align-items:center; gap:5px; margin-bottom:4px;}
+  .stat .val{ font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:700; }
+  .stat.green .val{ color:var(--green-deep); }
+  .stat.blue .val{ color:var(--blue); }
+  .stat.amber .val{ color:var(--amber); }
+  .stat.red .val{ color:var(--red); }
+
+  .qa-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .qa-btn{
+    background:var(--green); color:#fff; border:none; border-radius:12px;
+    padding:13px 10px; font-weight:700; font-size:13px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; justify-content:center;
+  }
+  .qa-btn.alt{ background:var(--blue); }
+  .qa-btn.ghost{ background:var(--card); color:var(--ink); border:1px solid var(--line); }
+
+  .section-title{ font-size:11px; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink-soft); font-weight:700; margin:18px 0 8px 2px; }
+
+  /* bar chart */
+  .bars{ display:flex; align-items:flex-end; gap:6px; height:70px; margin-top:6px; }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .bar{ width:100%; background:var(--green-tint); border-radius:4px 4px 0 0; position:relative; min-height:2px; }
+  .bar-fill{ background:var(--green); width:100%; border-radius:4px 4px 0 0; }
+  .bar-lbl{ font-size:9px; color:var(--ink-soft); }
+
+  /* forms */
+  label{ display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); margin-bottom:4px; }
+  input, select, textarea{
+    width:100%; font-family:'Inter',sans-serif; font-size:14px; padding:10px 11px;
+    border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--ink);
+    margin-bottom:12px;
+  }
+  input.mono, .amount-display{ font-family:'IBM Plex Mono',monospace; }
+  input:focus, select:focus, textarea:focus{ outline:2px solid var(--green); outline-offset:1px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .seg{ display:flex; gap:8px; margin-bottom:12px; }
+  .seg button{
+    flex:1; padding:10px; border-radius:9px; border:1px solid var(--line); background:var(--card);
+    font-weight:700; font-size:13px; cursor:pointer; color:var(--ink-soft);
+  }
+  .seg button.active{ background:var(--green); border-color:var(--green); color:#fff; }
+  .btn{
+    width:100%; padding:12px; border:none; border-radius:10px; background:var(--green); color:#fff;
+    font-weight:700; font-size:14.5px; cursor:pointer; margin-top:2px;
+  }
+  .btn.blue{ background:var(--blue); }
+  .btn.outline{ background:var(--card); color:var(--ink); border:1px solid var(--line); }
+  .btn.danger{ background:var(--red); }
+  .btn.small{ padding:8px 12px; font-size:12.5px; width:auto; }
+  .amount-preview{
+    background:var(--green-tint); border-radius:10px; padding:12px; margin-bottom:12px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .amount-preview .amt{ font-family:'IBM Plex Mono',monospace; font-weight:800; font-size:20px; color:var(--green-deep); }
+  .msg{ font-size:12.5px; padding:9px 11px; border-radius:8px; margin-bottom:10px; }
+  .msg.err{ background:var(--red-tint); color:var(--red); }
+  .msg.warn{ background:var(--amber-tint); color:var(--amber); }
+  .msg.ok{ background:var(--green-tint); color:var(--green-deep); }
+
+  /* lists */
+  .list-item{
+    display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--line);
+  }
+  .list-item:last-child{ border-bottom:none; }
+  .avatar{ width:34px;height:34px;border-radius:50%;background:var(--green-tint); color:var(--green-deep);
+    display:flex;align-items:center;justify-content:center; font-weight:700; font-size:13px; flex:0 0 auto; }
+  .li-main{ flex:1; min-width:0; }
+  .li-main .name{ font-weight:700; font-size:14px; }
+  .li-main .sub{ font-size:11.5px; color:var(--ink-soft); }
+  .li-right{ text-align:right; flex:0 0 auto; }
+  .li-right .amt{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13.5px; }
+  .balance-pill{ font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; }
+  .balance-pill.due{ background:var(--red-tint); color:var(--red); }
+  .balance-pill.clear{ background:var(--green-tint); color:var(--green-deep); }
+  .empty{ text-align:center; padding:26px 10px; color:var(--ink-soft); font-size:13px; }
+
+  .search-bar{ position:relative; margin-bottom:12px; }
+  .search-bar input{ margin-bottom:0; padding-left:32px; }
+  .search-bar .ic{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-soft); font-size:13px; }
+
+  /* bottom nav */
+  .bottom-nav{
+    position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--line);
+    display:flex; z-index:50;
+  }
+  .nav-btn{
+    flex:1; border:none; background:none; padding:9px 4px 8px; display:flex; flex-direction:column;
+    align-items:center; gap:3px; color:var(--ink-soft); font-size:10px; font-weight:600; cursor:pointer;
+  }
+  .nav-btn .ic{ font-size:18px; }
+  .nav-btn.active{ color:var(--green-deep); }
+
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:12px; }
+  th, td{ padding:8px 6px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th{ color:var(--ink-soft); font-weight:700; font-size:10.5px; text-transform:uppercase; letter-spacing:0.03em; }
+  td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
+
+  .back-row{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .back-row .back-btn{ background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink); padding:0 4px; }
+  .back-row h2{ font-size:16px; margin:0; font-weight:800; }
+
+  .tabbar{ display:flex; gap:6px; margin-bottom:12px; }
+  .tabbar button{ flex:1; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--card); font-size:12px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+  .tabbar button.active{ background:var(--blue-tint); color:var(--blue); border-color:var(--blue); }
+  .subview{ display:none; }
+  .subview.active{ display:block; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(20,25,20,0.55); z-index:100;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .overlay.hidden{ display:none; }
+  .sheet{ background:var(--bg); width:100%; max-width:480px; border-radius:18px 18px 0 0; padding:18px 16px 24px; max-height:88vh; overflow-y:auto; }
+  .sheet h2{ margin:0 0 12px; font-size:16px; font-weight:800; }
+  .close-x{ float:right; background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand"><img src="icon-192.png" alt="" style="width:38px;height:38px;border-radius:10px;object-fit:cover;"><div><h1 id="appTitle">Chauhan Dairy</h1><div class="date" id="headerDate"></div></div></div>
+  <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
+</div>
+
+<div class="wrap">
+
+  <!-- HOME -->
+  <div class="view active" id="view-home">
+    <div class="card" id="backupReminderCard" style="display:none;background:var(--amber-tint);border:1px solid var(--amber);">
+      <div style="font-size:13px;font-weight:600;" id="backupReminderText"></div>
+      <button class="btn small blue" id="backupReminderBtn" style="margin-top:8px;">⬇ Backup Now</button>
+    </div>
+    <div class="card">
+      <p class="greet" id="greetName">Good day</p>
+      <p class="greet-sub">Here's how things stand today</p>
+      <div class="stat-grid">
+        <div class="stat green"><div class="lbl">🥛 Today's Milk</div><div class="val" id="s-todayMilk">0.0 L</div></div>
+        <div class="stat blue"><div class="lbl">👥 Customers</div><div class="val" id="s-supplierCount">0</div></div>
+        <div class="stat green"><div class="lbl">💰 Today's Value</div><div class="val" id="s-todayValue">₹0</div></div>
+        <div class="stat blue"><div class="lbl">💵 Today's Collections</div><div class="val" id="s-todayPayments">₹0</div></div>
+        <div class="stat red"><div class="lbl">📌 Outstanding</div><div class="val" id="s-outstanding">₹0</div></div>
+        <div class="stat amber"><div class="lbl">🐃 Buffalo / 🐄 Cow</div><div class="val" id="s-animalSplit" style="font-size:14px;">0 / 0 L</div></div>
+      </div>
+    </div>
+
+    <div class="qa-grid">
+      <button class="qa-btn" data-nav="bulk">📋 Bulk Entry (all)</button>
+      <button class="qa-btn" data-nav="milk">➕ Single Entry</button>
+      <button class="qa-btn alt" data-nav="add-supplier">👤 Add Customer</button>
+      <button class="qa-btn ghost" data-nav="add-payment">💵 Record Payment</button>
+      <button class="qa-btn ghost" data-nav="reminders">💬 Reminders</button>
+      <button class="qa-btn ghost" data-nav="reports">📊 Reports</button>
+    </div>
+
+    <div class="section-title">Last 7 days — total milk (L)</div>
+    <div class="card"><div class="bars" id="weekBars"></div></div>
+
+    <div class="section-title">Recent entries</div>
+    <div class="card" id="recentEntries"></div>
+  </div>
+
+  <!-- MILK ENTRY -->
+  <div class="view" id="view-milk">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2 id="milkTitle">Add Milk Entry</h2></div>
+    <button class="btn outline" data-nav="bulk" style="margin:0 0 12px;">📋 Bulk entry for all customers</button>
+    <div class="card">
+      <div id="milkMsg"></div>
+      <label for="me-supplier">Customer</label>
+      <select id="me-supplier"></select>
+
+      <label for="me-date">Date</label>
+      <input type="date" id="me-date">
+
+      <label>Session</label>
+      <div class="seg" id="me-session">
+        <button type="button" data-val="Morning" class="active">🌅 Morning</button>
+        <button type="button" data-val="Evening">🌙 Evening</button>
+      </div>
+
+      <label>Animal Type</label>
+      <div class="seg" id="me-animal">
+        <button type="button" data-val="Buffalo" class="active">🐃 Buffalo</button>
+        <button type="button" data-val="Cow">🐄 Cow</button>
+        <button type="button" data-val="Other">Other</button>
+      </div>
+
+      <label for="me-qty">Milk Quantity (L)</label>
+      <input type="number" class="mono" id="me-qty" step="0.05" min="0" placeholder="5.750">
+
+      <div class="field-row" id="me-fatsnf-row" style="display:none;">
+        <div><label for="me-fat">Fat %</label><input type="number" class="mono" id="me-fat" step="0.1" min="0"></div>
+        <div><label for="me-snf">SNF %</label><input type="number" class="mono" id="me-snf" step="0.1" min="0"></div>
+      </div>
+
+      <label for="me-rate">Rate (₹ / Litre)</label>
+      <input type="number" class="mono" id="me-rate" step="0.5" min="0">
+
+      <div class="amount-preview">
+        <span>Total Amount</span>
+        <span class="amt" id="me-amount">₹0.00</span>
+      </div>
+
+      <button class="btn" id="me-save">✓ Save Milk Entry</button>
+      <button class="btn outline" id="me-skip" style="margin-top:8px;">🚫 Mark Skipped / No Delivery</button>
+    </div>
+
+    <div class="section-title" id="todayEntriesTitle">Today's entries</div>
+    <div class="card" id="todayEntriesList"></div>
+  </div>
+
+  <!-- SUPPLIERS -->
+  <div class="view" id="view-suppliers">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2>Customers</h2></div>
+    <div class="search-bar"><span class="ic">🔍</span><input type="text" id="supplierSearch" placeholder="Search by name, ID or mobile"></div>
+    <button class="btn blue" data-nav="add-supplier" style="margin-bottom:14px;">+ Add Customer</button>
+    <div class="card" id="supplierList"></div>
+  </div>
+
+  <!-- ADD SUPPLIER -->
+  <div class="view" id="view-add-supplier">
+    <div class="back-row"><button class="back-btn" id="sp-back" data-nav="suppliers">←</button><h2 id="sp-title">Add Customer</h2></div>
+    <div class="card">
+      <div id="supplierMsg"></div>
+      <label for="sp-name">Customer Name</label>
+      <input type="text" id="sp-name" placeholder="e.g. Ramesh Kumar">
+      <label for="sp-father">Father's / Husband's Name</label>
+      <input type="text" id="sp-father">
+      <label for="sp-mobile">Mobile Number</label>
+      <input type="tel" id="sp-mobile" placeholder="10-digit mobile">
+      <label for="sp-address">Address</label>
+      <input type="text" id="sp-address">
+      <div class="field-row">
+        <div><label for="sp-animal">Milk Type</label>
+          <select id="sp-animal"><option>Buffalo</option><option>Cow</option><option>Mixed</option><option>Other</option></select>
+        </div>
+        <div><label for="sp-numanimals">Daily Quantity (L, optional)</label><input type="number" id="sp-numanimals" min="0" step="0.5"></div>
+      </div>
+      <label>Custom rate per milk type (₹/L) — leave blank to use default</label>
+      <div class="field-row" style="grid-template-columns:1fr 1fr 1fr;">
+        <div><label for="sp-rate-buffalo">🐃 Buffalo</label><input type="number" class="mono" id="sp-rate-buffalo" step="0.5" min="0"></div>
+        <div><label for="sp-rate-cow">🐄 Cow</label><input type="number" class="mono" id="sp-rate-cow" step="0.5" min="0"></div>
+        <div><label for="sp-rate-other">Other</label><input type="number" class="mono" id="sp-rate-other" step="0.5" min="0"></div>
+      </div>
+      <label for="sp-start">Delivery Start Date</label>
+      <input type="date" id="sp-start">
+      <label for="sp-notes">Notes</label>
+      <textarea id="sp-notes" rows="2"></textarea>
+      <button class="btn blue" id="sp-save">Save Customer</button>
+    </div>
+  </div>
+
+  <!-- SUPPLIER PROFILE -->
+  <div class="view" id="view-supplier-profile">
+    <div class="back-row"><button class="back-btn" data-nav="suppliers">←</button><h2 id="pf-name">Customer</h2></div>
+    <div class="card">
+      <div class="stat-grid">
+        <div class="stat green"><div class="lbl">This Month</div><div class="val" id="pf-monthMilk">0 L</div></div>
+        <div class="stat blue"><div class="lbl">Total Value</div><div class="val" id="pf-totalValue">₹0</div></div>
+        <div class="stat green"><div class="lbl">Paid</div><div class="val" id="pf-paid">₹0</div></div>
+        <div class="stat red"><div class="lbl" id="pf-balLbl">Outstanding</div><div class="val" id="pf-balance">₹0</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:2px;" id="pf-meta"></div>
+    </div>
+    <div class="card" id="pf-qrCard">
+      <div class="section-title" style="margin-top:0;">💳 Request Payment (UPI QR)</div>
+      <div id="pf-qrBody"></div>
+    </div>
+    <button class="btn blue" id="pf-recordPayment" style="margin-bottom:10px;">💵 Record Payment</button>
+    <div class="qa-grid" style="margin-bottom:10px;">
+      <button class="btn outline" id="pf-whatsapp" style="margin-top:0;">💬 WhatsApp Reminder</button>
+      <button class="btn outline" id="pf-edit" style="margin-top:0;">✏️ Edit Customer</button>
+    </div>
+    <button class="btn outline" id="pf-toggleActive" style="margin:0 0 8px;">⏸ Deactivate Customer</button>
+    <button class="btn danger" id="pf-deleteCustomer" style="margin:0 0 14px;">🗑 Delete Customer Permanently</button>
+    <button class="btn" id="pf-bill" style="margin:0 0 10px;background:#b45309;">🧾 Payment Bill (A4) — customer ko bhejo</button>
+    <div class="card" id="pf-statementCard">
+      <div class="section-title" style="margin-top:0;">🖨 Print / Save Statement as PDF</div>
+      <label for="pf-stmtMonth" style="margin-top:0;">Period</label>
+      <select id="pf-stmtMonth"></select>
+      <button class="btn outline" id="pf-printStatement" style="margin-top:2px;">Print / Save as PDF for this customer</button>
+    </div>
+    <div class="tabbar">
+      <button data-tab="history" class="active">History</button>
+      <button data-tab="payments">Payments</button>
+      <button data-tab="summary">Summary</button>
+    </div>
+    <div class="card">
+      <div class="subview active" id="pf-tab-history"><div class="table-wrap"><table id="pf-historyTable"></table></div></div>
+      <div class="subview" id="pf-tab-payments"><div id="pf-paymentsList"></div></div>
+      <div class="subview" id="pf-tab-summary"><div id="pf-summaryBody"></div></div>
+    </div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div class="view" id="view-payments">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2>Payments</h2></div>
+    <button class="btn blue" data-nav="add-payment" style="margin-bottom:14px;">+ Record Payment</button>
+    <div class="section-title">Customers who owe you</div>
+    <div class="card" id="outstandingList"></div>
+    <div class="section-title">All payments</div>
+    <div class="card" id="paymentsList"></div>
+  </div>
+
+  <!-- ADD PAYMENT -->
+  <div class="view" id="view-add-payment">
+    <div class="back-row"><button class="back-btn" id="pay-back" data-nav="payments">←</button><h2 id="pay-title">Record Payment</h2></div>
+    <div class="card">
+      <div id="paymentMsg"></div>
+      <label for="pay-supplier">Customer</label>
+      <select id="pay-supplier"></select>
+      <div class="amount-preview"><span>Previous Balance</span><span class="amt" id="pay-prevBalance">₹0</span></div>
+      <label for="pay-date">Date</label>
+      <input type="date" id="pay-date">
+      <label for="pay-amount">Amount (₹)</label>
+      <input type="number" class="mono" id="pay-amount" step="1" min="0">
+      <label for="pay-mode">Payment Mode</label>
+      <select id="pay-mode"><option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Other</option></select>
+      <label for="pay-ref">Reference Number</label>
+      <input type="text" id="pay-ref">
+      <label for="pay-notes">Notes</label>
+      <textarea id="pay-notes" rows="2"></textarea>
+      <div class="amount-preview"><span>Remaining Balance</span><span class="amt" id="pay-remBalance">₹0</span></div>
+      <div id="payWarn"></div>
+      <div class="card" id="payQrCard" style="display:none;padding:12px;margin-bottom:14px;">
+        <div class="section-title" style="margin-top:0;">💳 Scan to pay via UPI</div>
+        <div id="payQrBody"></div>
+        <button class="btn small outline" id="payShareQr" style="margin-top:8px;">📤 Share QR (WhatsApp)</button>
+        <div id="payQrShareStatus" style="font-size:11px;color:var(--ink-soft);margin-top:6px;"></div>
+      </div>
+      <button class="btn blue" id="pay-save">Save Payment</button>
+    </div>
+  </div>
+
+  <!-- PAYMENT BILL -->
+  <div class="view" id="view-bill">
+    <div class="back-row"><button class="back-btn" id="bill-back">←</button><h2>Payment Bill (A4)</h2></div>
+    <div class="card">
+      <div id="billCustomer" style="font-weight:700;margin-bottom:8px;"></div>
+      <div class="field-row">
+        <div><label for="bill-from">Date from</label><input type="date" id="bill-from"></div>
+        <div><label for="bill-to">Date to</label><input type="date" id="bill-to"></div>
+      </div>
+      <div class="field-row">
+        <div><label for="bill-due">Payment due date</label><input type="date" id="bill-due"></div>
+        <div><label for="bill-qr">UPI QR on bill</label><select id="bill-qr"><option value="1">Show QR</option><option value="0">Hide QR</option></select></div>
+      </div>
+      <label for="bill-note">Note on bill (optional)</label>
+      <input type="text" id="bill-note" maxlength="140" placeholder="e.g. Please pay by due date">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px;">
+        <button class="btn small outline" data-billrange="month">This month</button>
+        <button class="btn small outline" data-billrange="last">Last month</button>
+        <button class="btn small outline" data-billrange="cycle">Since last payment</button>
+        <button class="btn small outline" data-billrange="all">All dates</button>
+      </div>
+      <div id="billMsg"></div>
+    </div>
+    <div class="card" style="padding:10px;">
+      <div class="section-title" style="margin:0 0 8px;">Preview</div>
+      <div id="billPreviewBox" style="overflow:hidden;border:1px solid var(--line);border-radius:8px;background:#fff;"><div id="billPreview" style="width:760px;transform-origin:top left;"></div></div>
+    </div>
+    <button class="btn" id="bill-share">💬 Send PDF on WhatsApp</button>
+    <button class="btn blue" id="bill-pdf" style="margin-top:8px;">⬇ Download PDF (A4)</button>
+    <button class="btn outline" id="bill-print" style="margin-top:8px;">🖨 Print</button>
+  </div>
+
+  <!-- BULK ENTRY -->
+  <div class="view" id="view-bulk">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2>Bulk Entry</h2></div>
+    <div class="card">
+      <div id="bulkMsg"></div>
+      <div class="field-row">
+        <div><label for="bk-date">Date</label><input type="date" id="bk-date"></div>
+        <div><label for="bk-session">Session</label><select id="bk-session"><option>Morning</option><option>Evening</option></select></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;">Quantities are pre-filled from each customer's last entry for this session (or their daily quantity). Clear a box to skip saving it, or tap ✕ to mark the customer absent.</div>
+      <div id="bulkList"></div>
+      <div class="amount-preview"><span id="bulkCount">0 customers</span><span class="amt" id="bulkTotal">0 L</span></div>
+      <button class="btn" id="bk-save">✓ Save All Entries</button>
+    </div>
+  </div>
+
+  <!-- REMINDERS -->
+  <div class="view" id="view-reminders">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2>Payment Reminders</h2></div>
+    <p style="font-size:12px;color:var(--ink-soft);margin:0 0 10px;">Tap WhatsApp to open a ready-made message for each customer who owes you.</p>
+    <div class="card" id="reminderList"></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="view" id="view-reports">
+    <div class="back-row"><button class="back-btn" data-nav="home">←</button><h2>Reports</h2></div>
+    <div class="tabbar">
+      <button data-rtab="daily" class="active">Daily</button>
+      <button data-rtab="monthly">Monthly</button>
+    </div>
+
+    <div class="subview active" id="rtab-daily">
+      <div class="card">
+        <label for="rep-date">Date</label>
+        <input type="date" id="rep-date">
+        <div id="rep-dailyBody"></div>
+      </div>
+    </div>
+
+    <div class="subview" id="rtab-monthly">
+      <div class="card">
+        <label for="rep-month">Month</label>
+        <input type="month" id="rep-month">
+        <div id="rep-monthlyBody"></div>
+        <div class="section-title" style="margin-top:14px;">Customer-wise</div>
+        <div class="table-wrap"><table id="rep-supplierTable"></table></div>
+        <button class="btn outline" id="rep-lockMonth" style="margin-top:12px;"></button>
+        <div id="rep-lockNote" style="font-size:11px;color:var(--ink-soft);margin-top:6px;">Locking a month stops milk entries from being added, changed or deleted for that month, so bills stay final. Payments are still allowed.</div>
+        <div class="qa-grid" style="margin-top:12px;">
+          <button class="btn outline" id="rep-exportCsv" style="margin-top:0;">⬇ Export CSV</button>
+          <button class="btn outline" id="rep-printMonthly" style="margin-top:0;">🖨 Summary PDF</button>
+        </div>
+        <button class="btn blue" id="rep-printAllStatements" style="margin-top:10px;">🖨 All Customer Statements (PDF)</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" data-nav="home"><span class="ic">🏠</span>Home</button>
+  <button class="nav-btn" data-nav="milk"><span class="ic">🥛</span>Milk</button>
+  <button class="nav-btn" data-nav="suppliers"><span class="ic">👥</span>Customers</button>
+  <button class="nav-btn" data-nav="payments"><span class="ic">💰</span>Payments</button>
+  <button class="nav-btn" data-nav="reports"><span class="ic">📊</span>Reports</button>
+</div>
+
+<!-- SETTINGS OVERLAY -->
+<div class="overlay hidden" id="settingsOverlay">
+  <div class="sheet">
+    <button class="close-x" id="settingsClose">×</button>
+    <h2>Settings</h2>
+    <p style="font-size:11px;color:var(--ink-soft);margin-top:-6px;">Chauhan Dairy v<span id="set-appVersion"></span> · Last backup: <span id="set-lastBackup"></span></p>
+    <label for="set-name">Your Name</label>
+    <input type="text" id="set-name">
+    <label for="set-upi">Your UPI ID (for receiving payments)</label>
+    <input type="text" id="set-upi" placeholder="e.g. yourname@okhdfcbank">
+    <div class="field-row">
+      <div><label for="set-rate-buffalo">Default Rate — Buffalo (₹/L)</label><input type="number" class="mono" id="set-rate-buffalo" step="0.5"></div>
+      <div><label for="set-rate-cow">Default Rate — Cow (₹/L)</label><input type="number" class="mono" id="set-rate-cow" step="0.5"></div>
+    </div>
+    <label for="set-rate-other">Default Rate — Other (₹/L)</label>
+    <input type="number" class="mono" id="set-rate-other" step="0.5">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--ink);">
+      <input type="checkbox" id="set-fatsnf" style="width:auto;margin:0;"> Show Fat % / SNF % fields on entry
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--ink);margin-top:8px;">
+      <input type="checkbox" id="set-dupcheck" style="width:auto;margin:0;"> Warn on duplicate session entries
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--ink);margin-top:8px;">
+      <input type="checkbox" id="set-autopdf" style="width:auto;margin:0;"> Auto-save a PDF after each payment
+    </label>
+    <button class="btn" id="set-save" style="margin-top:14px;">Save Settings</button>
+    <button class="btn outline" id="set-exportAll" style="margin-top:10px;">⬇ Export all data (CSV)</button>
+    <div class="section-title" style="margin-top:16px;">🔁 Backup / Transfer to New Version</div>
+    <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;">Jab app update karein, pehle yahan se backup file download kar lein. Naye version mein khol kar wahi file "Restore" karein — sara data (customers, entries, payments) waapas aa jayega.</p>
+    <button class="btn outline" id="set-backupDownload" style="margin-top:0;">⬇ Download Backup (.json)</button>
+    <button class="btn outline" id="set-backupShare" style="margin-top:8px;">📤 Share Backup (Gmail/Drive)</button>
+    <input type="file" id="set-backupFile" accept="application/json" style="display:none;">
+    <button class="btn outline" id="set-backupRestore" style="margin-top:8px;">⬆ Restore from Backup</button>
+    <button class="btn danger" id="set-reset" style="margin-top:14px;">Clear all data</button>
+    <p id="settingsStatus" style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:10px;"></p>
+  </div>
+</div>
+
+<!-- DUPLICATE / CONFIRM OVERLAY -->
+<div class="overlay hidden" id="confirmOverlay">
+  <div class="sheet">
+    <h2 id="confirmTitle">Confirm</h2>
+    <p id="confirmBody" style="font-size:13.5px;color:var(--ink-soft);"></p>
+    <button class="btn" id="confirmYes">Yes</button>
+    <button class="btn outline" id="confirmNo" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* qrcode-generator v1.0.3 — MIT License — Kazuhiko Arase */
+var qrcode=function(){function r(t,e){if(void 0===t.length)throw new Error(t.length+"/"+e);var n=function(){for(var r=0;r<t.length&&0==t[r];)r+=1;for(var n=new Array(t.length-r+e),o=0;o<t.length-r;o+=1)n[o]=t[o+r];return n}(),o={};return o.getAt=function(r){return n[r]},o.getLength=function(){return n.length},o.multiply=function(t){for(var e=new Array(o.getLength()+t.getLength()-1),n=0;n<o.getLength();n+=1)for(var a=0;a<t.getLength();a+=1)e[n+a]^=i.gexp(i.glog(o.getAt(n))+i.glog(t.getAt(a)));return r(e,0)},o.mod=function(t){if(o.getLength()-t.getLength()<0)return o;for(var e=i.glog(o.getAt(0))-i.glog(t.getAt(0)),n=new Array(o.getLength()),a=0;a<o.getLength();a+=1)n[a]=o.getAt(a);for(var a=0;a<t.getLength();a+=1)n[a]^=i.gexp(i.glog(t.getAt(a))+e);return r(n,0).mod(t)},o}var t=function(t,e){var o=t,i=n[e],c=null,h=0,v=null,l=new Array,w={},d=function(r,t){h=4*o+17,c=function(r){for(var t=new Array(r),e=0;e<r;e+=1){t[e]=new Array(r);for(var n=0;n<r;n+=1)t[e][n]=null}return t}(h),y(0,0),y(h-7,0),y(0,h-7),E(),B(),T(r,t),o>=7&&p(r),null==v&&(v=k(o,i,l)),M(v,t)},y=function(r,t){for(var e=-1;e<=7;e+=1)if(!(r+e<=-1||h<=r+e))for(var n=-1;n<=7;n+=1)t+n<=-1||h<=t+n||(c[r+e][t+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},A=function(){for(var r=0,t=0,e=0;e<8;e+=1){d(!0,e);var n=a.getLostPoint(w);(0==e||r>n)&&(r=n,t=e)}return t},B=function(){for(var r=8;r<h-8;r+=1)null==c[r][6]&&(c[r][6]=r%2==0);for(var t=8;t<h-8;t+=1)null==c[6][t]&&(c[6][t]=t%2==0)},E=function(){for(var r=a.getPatternPosition(o),t=0;t<r.length;t+=1)for(var e=0;e<r.length;e+=1){var n=r[t],i=r[e];if(null==c[n][i])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)c[n+u][i+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},p=function(r){for(var t=a.getBCHTypeNumber(o),e=0;e<18;e+=1){var n=!r&&1==(t>>e&1);c[Math.floor(e/3)][e%3+h-8-3]=n}for(var e=0;e<18;e+=1){var n=!r&&1==(t>>e&1);c[e%3+h-8-3][Math.floor(e/3)]=n}},T=function(r,t){for(var e=i<<3|t,n=a.getBCHTypeInfo(e),o=0;o<15;o+=1){var u=!r&&1==(n>>o&1);o<6?c[o][8]=u:o<8?c[o+1][8]=u:c[h-15+o][8]=u}for(var o=0;o<15;o+=1){var u=!r&&1==(n>>o&1);o<8?c[8][h-o-1]=u:o<9?c[8][15-o-1+1]=u:c[8][15-o-1]=u}c[h-8][8]=!r},M=function(r,t){for(var e=-1,n=h-1,o=7,i=0,u=a.getMaskFunction(t),f=h-1;f>0;f-=2)for(6==f&&(f-=1);;){for(var g=0;g<2;g+=1)if(null==c[n][f-g]){var v=!1;i<r.length&&(v=1==(r[i]>>>o&1));var l=u(n,f-g);l&&(v=!v),c[n][f-g]=v,o-=1,-1==o&&(i+=1,o=7)}if((n+=e)<0||h<=n){n-=e,e=-e;break}}},D=function(t,e){for(var n=0,o=0,i=0,u=new Array(e.length),f=new Array(e.length),g=0;g<e.length;g+=1){var c=e[g].dataCount,h=e[g].totalCount-c;o=Math.max(o,c),i=Math.max(i,h),u[g]=new Array(c);for(var v=0;v<u[g].length;v+=1)u[g][v]=255&t.getBuffer()[v+n];n+=c;var l=a.getErrorCorrectPolynomial(h),s=r(u[g],l.getLength()-1),w=s.mod(l);f[g]=new Array(l.getLength()-1);for(var v=0;v<f[g].length;v+=1){var d=v+w.getLength()-f[g].length;f[g][v]=d>=0?w.getAt(d):0}}for(var y=0,v=0;v<e.length;v+=1)y+=e[v].totalCount;for(var A=new Array(y),B=0,v=0;v<o;v+=1)for(var g=0;g<e.length;g+=1)v<u[g].length&&(A[B]=u[g][v],B+=1);for(var v=0;v<i;v+=1)for(var g=0;g<e.length;g+=1)v<f[g].length&&(A[B]=f[g][v],B+=1);return A},k=function(r,t,e){for(var n=u.getRSBlocks(r,t),o=f(),i=0;i<e.length;i+=1){var g=e[i];o.put(g.getMode(),4),o.put(g.getLength(),a.getLengthInBits(g.getMode(),r)),g.write(o)}for(var c=0,i=0;i<n.length;i+=1)c+=n[i].dataCount;if(o.getLengthInBits()>8*c)throw new Error("code length overflow. ("+o.getLengthInBits()+">"+8*c+")");for(o.getLengthInBits()+4<=8*c&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;;){if(o.getLengthInBits()>=8*c)break;if(o.put(236,8),o.getLengthInBits()>=8*c)break;o.put(17,8)}return D(o,n)};return w.addData=function(r){var t=g(r);l.push(t),v=null},w.isDark=function(r,t){if(r<0||h<=r||t<0||h<=t)throw new Error(r+","+t);return c[r][t]},w.getModuleCount=function(){return h},w.make=function(){d(!1,A())},w.createTableTag=function(r,t){r=r||2,t=void 0===t?4*r:t;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+t+"px;",e+='">',e+="<tbody>";for(var n=0;n<w.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<w.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+r+"px;",e+=" height: "+r+"px;",e+=" background-color: ",e+=w.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},w.createSvgTag=function(r,t){r=r||2,t=void 0===t?4*r:t;var e,n,o,a,i,u=w.getModuleCount()*r+2*t,f="";for(i="l"+r+",0 0,"+r+" -"+r+",0 0,-"+r+"z ",f+="<svg",f+=' width="'+u+'px"',f+=' height="'+u+'px"',f+=' xmlns="http://www.w3.org/2000/svg"',f+=">",f+='<path d="',o=0;o<w.getModuleCount();o+=1)for(a=o*r+t,e=0;e<w.getModuleCount();e+=1)w.isDark(o,e)&&(n=e*r+t,f+="M"+n+","+a+i);return f+='" stroke="transparent" fill="black"/>',f+="</svg>"},w.createImgTag=function(r,t){r=r||2,t=void 0===t?4*r:t;var e=w.getModuleCount()*r+2*t,n=t,o=e-t;return s(e,e,function(t,e){if(n<=t&&t<o&&n<=e&&e<o){var a=Math.floor((t-n)/r),i=Math.floor((e-n)/r);return w.isDark(i,a)?0:1}return 1})},w};t.stringToBytes=function(r){for(var t=new Array,e=0;e<r.length;e+=1){var n=r.charCodeAt(e);t.push(255&n)}return t},t.createStringToBytes=function(r,t){var e=function(){for(var e=v(r),n=function(){var r=e.read();if(-1==r)throw new Error;return r},o=0,a={};;){var i=e.read();if(-1==i)break;var u=n(),f=n(),g=n(),c=String.fromCharCode(i<<8|u),h=f<<8|g;a[c]=h,o+=1}if(o!=t)throw new Error(o+" != "+t);return a}(),n="?".charCodeAt(0);return function(r){for(var t=new Array,o=0;o<r.length;o+=1){var a=r.charCodeAt(o);if(a<128)t.push(a);else{var i=e[r.charAt(o)];"number"==typeof i?(255&i)==i?t.push(i):(t.push(i>>>8),t.push(255&i)):t.push(n)}}return t}};var e={MODE_NUMBER:1,MODE_ALPHA_NUM:2,MODE_8BIT_BYTE:4,MODE_KANJI:8},n={L:1,M:0,Q:3,H:2},o={PATTERN000:0,PATTERN001:1,PATTERN010:2,PATTERN011:3,PATTERN100:4,PATTERN101:5,PATTERN110:6,PATTERN111:7},a=function(){var t=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],n={},a=function(r){for(var t=0;0!=r;)t+=1,r>>>=1;return t};return n.getBCHTypeInfo=function(r){for(var t=r<<10;a(t)-a(1335)>=0;)t^=1335<<a(t)-a(1335);return 21522^(r<<10|t)},n.getBCHTypeNumber=function(r){for(var t=r<<12;a(t)-a(7973)>=0;)t^=7973<<a(t)-a(7973);return r<<12|t},n.getPatternPosition=function(r){return t[r-1]},n.getMaskFunction=function(r){switch(r){case o.PATTERN000:return function(r,t){return(r+t)%2==0};case o.PATTERN001:return function(r,t){return r%2==0};case o.PATTERN010:return function(r,t){return t%3==0};case o.PATTERN011:return function(r,t){return(r+t)%3==0};case o.PATTERN100:return function(r,t){return(Math.floor(r/2)+Math.floor(t/3))%2==0};case o.PATTERN101:return function(r,t){return r*t%2+r*t%3==0};case o.PATTERN110:return function(r,t){return(r*t%2+r*t%3)%2==0};case o.PATTERN111:return function(r,t){return(r*t%3+(r+t)%2)%2==0};default:throw new Error("bad maskPattern:"+r)}},n.getErrorCorrectPolynomial=function(t){for(var e=r([1],0),n=0;n<t;n+=1)e=e.multiply(r([1,i.gexp(n)],0));return e},n.getLengthInBits=function(r,t){if(1<=t&&t<10)switch(r){case e.MODE_NUMBER:return 10;case e.MODE_ALPHA_NUM:return 9;case e.MODE_8BIT_BYTE:case e.MODE_KANJI:return 8;default:throw new Error("mode:"+r)}else if(t<27)switch(r){case e.MODE_NUMBER:return 12;case e.MODE_ALPHA_NUM:return 11;case e.MODE_8BIT_BYTE:return 16;case e.MODE_KANJI:return 10;default:throw new Error("mode:"+r)}else{if(!(t<41))throw new Error("type:"+t);switch(r){case e.MODE_NUMBER:return 14;case e.MODE_ALPHA_NUM:return 13;case e.MODE_8BIT_BYTE:return 16;case e.MODE_KANJI:return 12;default:throw new Error("mode:"+r)}}},n.getLostPoint=function(r){for(var t=r.getModuleCount(),e=0,n=0;n<t;n+=1)for(var o=0;o<t;o+=1){for(var a=0,i=r.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||t<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||t<=o+f||0==u&&0==f||i==r.isDark(n+u,o+f)&&(a+=1);a>5&&(e+=3+a-5)}for(var n=0;n<t-1;n+=1)for(var o=0;o<t-1;o+=1){var g=0;r.isDark(n,o)&&(g+=1),r.isDark(n+1,o)&&(g+=1),r.isDark(n,o+1)&&(g+=1),r.isDark(n+1,o+1)&&(g+=1),0!=g&&4!=g||(e+=3)}for(var n=0;n<t;n+=1)for(var o=0;o<t-6;o+=1)r.isDark(n,o)&&!r.isDark(n,o+1)&&r.isDark(n,o+2)&&r.isDark(n,o+3)&&r.isDark(n,o+4)&&!r.isDark(n,o+5)&&r.isDark(n,o+6)&&(e+=40);for(var o=0;o<t;o+=1)for(var n=0;n<t-6;n+=1)r.isDark(n,o)&&!r.isDark(n+1,o)&&r.isDark(n+2,o)&&r.isDark(n+3,o)&&r.isDark(n+4,o)&&!r.isDark(n+5,o)&&r.isDark(n+6,o)&&(e+=40);for(var c=0,o=0;o<t;o+=1)for(var n=0;n<t;n+=1)r.isDark(n,o)&&(c+=1);return e+=Math.abs(100*c/t/t-50)/5*10},n}(),i=function(){for(var r=new Array(256),t=new Array(256),e=0;e<8;e+=1)r[e]=1<<e;for(var e=8;e<256;e+=1)r[e]=r[e-4]^r[e-5]^r[e-6]^r[e-8];for(var e=0;e<255;e+=1)t[r[e]]=e;var n={};return n.glog=function(r){if(r<1)throw new Error("glog("+r+")");return t[r]},n.gexp=function(t){for(;t<0;)t+=255;for(;t>=256;)t-=255;return r[t]},n}(),u=function(){var r=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],t=function(r,t){var e={};return e.totalCount=r,e.dataCount=t,e},e={},o=function(t,e){switch(e){case n.L:return r[4*(t-1)+0];case n.M:return r[4*(t-1)+1];case n.Q:return r[4*(t-1)+2];case n.H:return r[4*(t-1)+3];default:return}};return e.getRSBlocks=function(r,e){var n=o(r,e);if(void 0===n)throw new Error("bad rs block @ typeNumber:"+r+"/errorCorrectionLevel:"+e);for(var a=n.length/3,i=new Array,u=0;u<a;u+=1)for(var f=n[3*u+0],g=n[3*u+1],c=n[3*u+2],h=0;h<f;h+=1)i.push(t(g,c));return i},e}(),f=function(){var r=new Array,t=0,e={};return e.getBuffer=function(){return r},e.getAt=function(t){var e=Math.floor(t/8);return 1==(r[e]>>>7-t%8&1)},e.put=function(r,t){for(var n=0;n<t;n+=1)e.putBit(1==(r>>>t-n-1&1))},e.getLengthInBits=function(){return t},e.putBit=function(e){var n=Math.floor(t/8);r.length<=n&&r.push(0),e&&(r[n]|=128>>>t%8),t+=1},e},g=function(r){var n=e.MODE_8BIT_BYTE,o=t.stringToBytes(r),a={};return a.getMode=function(){return n},a.getLength=function(r){return o.length},a.write=function(r){for(var t=0;t<o.length;t+=1)r.put(o[t],8)},a},c=function(){var r=new Array,t={};return t.writeByte=function(t){r.push(255&t)},t.writeShort=function(r){t.writeByte(r),t.writeByte(r>>>8)},t.writeBytes=function(r,e,n){e=e||0,n=n||r.length;for(var o=0;o<n;o+=1)t.writeByte(r[o+e])},t.writeString=function(r){for(var e=0;e<r.length;e+=1)t.writeByte(r.charCodeAt(e))},t.toByteArray=function(){return r},t.toString=function(){var t="";t+="[";for(var e=0;e<r.length;e+=1)e>0&&(t+=","),t+=r[e];return t+="]"},t},h=function(){var r=0,t=0,e=0,n="",o={},a=function(r){n+=String.fromCharCode(i(63&r))},i=function(r){if(r<0);else{if(r<26)return 65+r;if(r<52)return r-26+97;if(r<62)return r-52+48;if(62==r)return 43;if(63==r)return 47}throw new Error("n:"+r)};return o.writeByte=function(n){for(r=r<<8|255&n,t+=8,e+=1;t>=6;)a(r>>>t-6),t-=6},o.flush=function(){if(t>0&&(a(r<<6-t),r=0,t=0),e%3!=0)for(var o=3-e%3,i=0;i<o;i+=1)n+="="},o.toString=function(){return n},o},v=function(r){var t=r,e=0,n=0,o=0,a={};a.read=function(){for(;o<8;){if(e>=t.length){if(0==o)return-1;throw new Error("unexpected end of file./"+o)}var r=t.charAt(e);if(e+=1,"="==r)return o=0,-1;r.match(/^\s$/)||(n=n<<6|i(r.charCodeAt(0)),o+=6)}var a=n>>>o-8&255;return o-=8,a};var i=function(r){if(65<=r&&r<=90)return r-65;if(97<=r&&r<=122)return r-97+26;if(48<=r&&r<=57)return r-48+52;if(43==r)return 62;if(47==r)return 63;throw new Error("c:"+r)};return a},l=function(r,t){var e=r,n=t,o=new Array(r*t),a={};a.setPixel=function(r,t,n){o[t*e+r]=n},a.write=function(r){r.writeString("GIF87a"),r.writeShort(e),r.writeShort(n),r.writeByte(128),r.writeByte(0),r.writeByte(0),r.writeByte(0),r.writeByte(0),r.writeByte(0),r.writeByte(255),r.writeByte(255),r.writeByte(255),r.writeString(","),r.writeShort(0),r.writeShort(0),r.writeShort(e),r.writeShort(n),r.writeByte(0);var t=u(2);r.writeByte(2);for(var o=0;t.length-o>255;)r.writeByte(255),r.writeBytes(t,o,255),o+=255;r.writeByte(t.length-o),r.writeBytes(t,o,t.length-o),r.writeByte(0),r.writeString(";")};var i=function(r){var t=r,e=0,n=0,o={};return o.write=function(r,o){if(r>>>o!=0)throw new Error("length over");for(;e+o>=8;)t.writeByte(255&(r<<e|n)),o-=8-e,r>>>=8-e,n=0,e=0;n|=r<<e,e+=o},o.flush=function(){e>0&&t.writeByte(n)},o},u=function(r){for(var t=1<<r,e=1+(1<<r),n=r+1,a=f(),u=0;u<t;u+=1)a.add(String.fromCharCode(u));a.add(String.fromCharCode(t)),a.add(String.fromCharCode(e));var g=c(),h=i(g);h.write(t,n);var v=0,l=String.fromCharCode(o[v]);for(v+=1;v<o.length;){var s=String.fromCharCode(o[v]);v+=1,a.contains(l+s)?l+=s:(h.write(a.indexOf(l),n),a.size()<4095&&(a.size()==1<<n&&(n+=1),a.add(l+s)),l=s)}return h.write(a.indexOf(l),n),h.write(e,n),h.flush(),g.toByteArray()},f=function(){var r={},t=0,e={};return e.add=function(n){if(e.contains(n))throw new Error("dup key:"+n);r[n]=t,t+=1},e.size=function(){return t},e.indexOf=function(t){return r[t]},e.contains=function(t){return void 0!==r[t]},e};return a},s=function(r,t,e,n){for(var o=l(r,t),a=0;a<t;a+=1)for(var i=0;i<r;i+=1)o.setPixel(i,a,e(i,a));var u=c();o.write(u);for(var f=h(),g=u.toByteArray(),v=0;v<g.length;v+=1)f.writeByte(g[v]);f.flush();var s="";return s+="<img",s+=' src="',s+="data:image/gif;base64,",s+=f,s+='"',s+=' width="',s+=r,s+='"',s+=' height="',s+=t,s+='"',n&&(s+=' alt="',s+=n,s+='"'),s+="/>"};return t}();!function(r){"function"==typeof define&&define.amd?define([],r):"object"==typeof exports&&(module.exports=r())}(function(){return qrcode});
+</script>
+<script>
+const KEYS = { suppliers:'mm-suppliers', entries:'mm-entries', payments:'mm-payments', settings:'mm-settings' };
+let suppliers = [], entries = [], payments = [];
+const APP_VERSION = '2.0';
+const defaultSettings = () => ({ milkmanName:'', myUpi:'', rates:{Buffalo:55, Cow:45, Other:40}, showFatSnf:false, preventDuplicates:true, autoPaymentPdf:true, lastBackupAt:null, lockedMonths:[] });
+let settings = defaultSettings();
+let currentSupplierId = null;
+let editingSupplierId = null, editingPaymentId = null, editingEntryId = null, payPrefillId = null;
+let confirmCallback = null;
+let payReturn = 'payments', currentView = 'home';
+
+/* ---------- storage (browser localStorage — data stays on this device/browser) ---------- */
+const idb = (function(){
+  let dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise(resolve=>{
+      try{
+        const r = indexedDB.open('milkmitra', 1);
+        r.onupgradeneeded = ()=>r.result.createObjectStore('kv');
+        r.onsuccess = ()=>resolve(r.result);
+        r.onerror = ()=>resolve(null);
+        r.onblocked = ()=>resolve(null);
+      }catch(e){ resolve(null); }
+    });
+    return dbp;
+  }
+  return {
+    async set(k, v){ const db = await open(); if(!db) return; try{ db.transaction('kv','readwrite').objectStore('kv').put(v, k); }catch(e){} },
+    async get(k){
+      const db = await open(); if(!db) return null;
+      return new Promise(res=>{ try{ const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = ()=>res(q.result ?? null); q.onerror = ()=>res(null); }catch(e){ res(null); } });
+    }
+  };
+})();
+async function readKey(key, fallback){
+  let raw = null;
+  try{ raw = localStorage.getItem(key); }catch(e){}
+  if(raw === null){
+    // browser may have evicted localStorage: recover from the IndexedDB mirror
+    const mirror = await idb.get(key);
+    if(mirror){ raw = mirror; try{ localStorage.setItem(key, mirror); }catch(e){} }
+  }
+  if(raw === null) return fallback;
+  try{ return JSON.parse(raw); }catch(e){ return fallback; }
+}
+async function loadAll(){
+  const s = await readKey(KEYS.suppliers, []); suppliers = Array.isArray(s) ? s : [];
+  const en = await readKey(KEYS.entries, []); entries = Array.isArray(en) ? en : [];
+  const p = await readKey(KEYS.payments, []); payments = Array.isArray(p) ? p : [];
+  const st = await readKey(KEYS.settings, null);
+  settings = Object.assign(defaultSettings(), (st && typeof st === 'object') ? st : {});
+}
+async function save(key, data){
+  const json = JSON.stringify(data);
+  try{ localStorage.setItem(key, json); }catch(e){ console.error('save failed', e); alert('Could not save data — phone storage may be full. Please download a backup now.'); }
+  idb.set(key, json);
+}
+const saveSuppliers = () => save(KEYS.suppliers, suppliers);
+const saveEntries = () => save(KEYS.entries, entries);
+const savePayments = () => save(KEYS.payments, payments);
+const saveSettings = () => save(KEYS.settings, settings);
+
+/* ---------- helpers ---------- */
+const isoLocal = d => { const x=new Date(d.getTime()); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); };
+const todayISO = () => isoLocal(new Date());
+const round2 = n => Math.round((n + Number.EPSILON)*100)/100;
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const qtyLabel = e => e.skipped ? 'Skipped' : e.quantity + ' L';
+const monthKey = d => d.slice(0,7);
+const rupee = n => '₹' + (Math.round(n*100)/100).toLocaleString('en-IN');
+const fmtDate = iso => { const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); };
+const initials = name => esc((name||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase());
+
+function nextSupplierCode(){
+  const max = suppliers.reduce((m,s)=>Math.max(m, parseInt(String(s.code||'').replace(/\D/g,''))||0), 0);
+  return 'C' + String(max + 1).padStart(3,'0');
+}
+function getSupplier(id){ return suppliers.find(s=>s.id===id); }
+function rateFor(supplier, animalType){
+  if(supplier){
+    if(supplier.rates && supplier.rates[animalType] > 0) return supplier.rates[animalType];
+    if(supplier.rate > 0) return supplier.rate;
+  }
+  const r = settings.rates[animalType];
+  return r > 0 ? r : (settings.rates.Other > 0 ? settings.rates.Other : 0);
+}
+function supplierEntries(id){ return entries.filter(e=>e.supplierId===id); }
+function supplierPayments(id){ return payments.filter(p=>p.supplierId===id); }
+function supplierBalance(id, excludePaymentId){
+  const totalAmount = round2(supplierEntries(id).reduce((s,e)=>s+e.amount,0));
+  const totalPaid = round2(supplierPayments(id).filter(p=>p.id!==excludePaymentId).reduce((s,p)=>s+p.amount,0));
+  return { totalAmount, totalPaid, balance: round2(totalAmount - totalPaid) };
+}
+function balanceAsOf(id, endISO){
+  const a = supplierEntries(id).filter(e=>e.date<=endISO).reduce((s,e)=>s+e.amount,0);
+  const p = supplierPayments(id).filter(x=>x.date<=endISO).reduce((s,x)=>s+x.amount,0);
+  return round2(a - p);
+}
+function totalDues(){ return round2(suppliers.reduce((s,sup)=>s+Math.max(0, supplierBalance(sup.id).balance),0)); }
+function isLocked(date){ return (settings.lockedMonths||[]).includes(monthKey(date)); }
+function csvEscape(v){ v = String(v ?? ''); if(/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v = "'" + v; return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+
+/* ---------- file saving: works as a plain HTML file AND as a published Claude artifact ---------- */
+let downloadsCap = null, downloadsCapReady = (async function(){
+  try{
+    if(window.claude && typeof window.claude.use === 'function'){
+      downloadsCap = await window.claude.use('downloads');
+    }
+  }catch(e){ downloadsCap = null; }
+})();
+async function offerFileSave(filename, data){
+  await downloadsCapReady;
+  if(downloadsCap){
+    try{
+      await downloadsCap.save({ filename, data });
+      return { ok:true };
+    }catch(err){
+      const code = err && err.code;
+      if(code === 'declined') return { ok:false, message:'Save cancelled.' };
+      return { ok:false, message:'Could not save the file here.' };
+    }
+  }
+  const blob = (data instanceof Blob) ? data : new Blob([data], {type:'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  return { ok:true };
+}
+async function downloadCSV(filename, rows){
+  const csv = rows.map(r=>r.map(csvEscape).join(',')).join('\n');
+  await offerFileSave(filename, new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}));
+}
+function showConfirm(title, body, onYes){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmBody').textContent = body;
+  confirmCallback = onYes;
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+
+/* ---------- navigation ---------- */
+function nav(view, fromPop){
+  if(!fromPop && view !== currentView){ try{ history.pushState({v:view}, ''); }catch(e){} }
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const target = document.getElementById('view-'+view);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
+  if(view==='home') renderHome();
+  if(view==='milk') renderMilkView();
+  if(view==='suppliers') renderSupplierList();
+  if(view==='add-supplier') { editingSupplierId ? fillSupplierForm() : resetSupplierForm(); }
+  if(view==='payments') renderPaymentsView();
+  if(view==='add-payment') renderAddPaymentView();
+  if(view==='reports') renderReportsView();
+  if(view==='bulk') renderBulkView();
+  if(view==='reminders') renderRemindersView();
+  if(view==='bill') renderBillView();
+  if(view==='supplier-profile') renderSupplierProfile();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-nav]').forEach(el=>el.addEventListener('click', ()=>{
+  const v = el.dataset.nav;
+  if(el.id==='sp-back' && editingSupplierId){ currentSupplierId = editingSupplierId; editingSupplierId = null; nav('supplier-profile'); return; }
+  if(el.id==='pay-back' && payReturn==='supplier-profile' && currentSupplierId){ editingPaymentId = null; nav('supplier-profile'); return; }
+  if(v==='add-supplier') editingSupplierId = null;
+  if(v==='add-payment') { editingPaymentId = null; payPrefillId = null; payReturn = 'payments'; }
+  if(v==='milk') editingEntryId = null;
+  nav(v);
+}));
+
+/* ---------- HOME ---------- */
+function renderHome(){
+  const today = todayISO();
+  document.getElementById('headerDate').textContent = fmtDate(today);
+  document.getElementById('greetName').textContent = settings.milkmanName ? `Good day, ${settings.milkmanName}` : 'Good day';
+
+  const todayEntries = entries.filter(e=>e.date===today);
+  const todayMilk = todayEntries.reduce((s,e)=>s+e.quantity,0);
+  const todayValue = todayEntries.reduce((s,e)=>s+e.amount,0);
+  const todayPayments = payments.filter(p=>p.date===today).reduce((s,p)=>s+p.amount,0);
+  const buffalo = todayEntries.filter(e=>e.animalType==='Buffalo').reduce((s,e)=>s+e.quantity,0);
+  const cow = todayEntries.filter(e=>e.animalType==='Cow').reduce((s,e)=>s+e.quantity,0);
+  const totalOutstanding = totalDues();
+
+  document.getElementById('s-todayMilk').textContent = todayMilk.toFixed(1)+' L';
+  document.getElementById('s-supplierCount').textContent = suppliers.filter(s=>s.active!==false).length;
+  document.getElementById('s-todayValue').textContent = rupee(todayValue);
+  document.getElementById('s-todayPayments').textContent = rupee(todayPayments);
+  document.getElementById('s-outstanding').textContent = rupee(totalOutstanding);
+  document.getElementById('s-animalSplit').textContent = `${buffalo.toFixed(1)} / ${cow.toFixed(1)} L`;
+  renderBackupReminder();
+
+  // 7 day bars
+  const days = [];
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); const iso=isoLocal(d); days.push(iso); }
+  const totals = days.map(d => entries.filter(e=>e.date===d).reduce((s,e)=>s+e.quantity,0));
+  const max = Math.max(1, ...totals);
+  document.getElementById('weekBars').innerHTML = days.map((d,i)=>{
+    const pct = Math.max(3,(totals[i]/max)*100);
+    const lbl = new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'narrow'});
+    return `<div class="bar-col"><div class="bar" style="height:60px;display:flex;align-items:flex-end;"><div class="bar-fill" style="height:${pct}%"></div></div><div class="bar-lbl">${lbl}</div></div>`;
+  }).join('');
+
+  const recent = [...entries].sort((a,b)=> (b.date+b.createdAt).localeCompare(a.date+a.createdAt)).slice(0,6);
+  document.getElementById('recentEntries').innerHTML = recent.length ? recent.map(e=>{
+    const sup = getSupplier(e.supplierId);
+    return `<div class="list-item">
+      <div class="avatar">${initials(sup?sup.name:'?')}</div>
+      <div class="li-main"><div class="name">${esc(sup?sup.name:'Unknown')}</div><div class="sub">${fmtDate(e.date)} · ${e.session} · ${e.animalType}</div></div>
+      <div class="li-right"><div class="amt">${qtyLabel(e)}</div><div class="sub">${rupee(e.amount)}</div></div>
+    </div>`;
+  }).join('') : '<div class="empty">No milk entries yet. Tap "Add Milk Entry" to start.</div>';
+}
+
+/* ---------- MILK ENTRY ---------- */
+function populateSupplierSelect(sel, includeBlank, forceId){
+  sel.innerHTML = (includeBlank?'<option value="">Select customer…</option>':'') +
+    suppliers.filter(s=>s.active!==false || s.id===forceId).map(s=>`<option value="${s.id}">${esc(s.code)} — ${esc(s.name)}</option>`).join('');
+}
+function setSeg(containerId, val){ document.querySelectorAll('#'+containerId+' button').forEach(b=>b.classList.toggle('active', b.dataset.val===val)); }
+function updateMilkEditUi(){
+  document.getElementById('milkTitle').textContent = editingEntryId ? 'Edit Milk Entry' : 'Add Milk Entry';
+  document.getElementById('me-save').textContent = editingEntryId ? '✓ Update Milk Entry' : '✓ Save Milk Entry';
+}
+function renderMilkView(){
+  document.getElementById('milkMsg').innerHTML = '';
+  const ed = editingEntryId ? entries.find(x=>x.id===editingEntryId) : null;
+  if(editingEntryId && !ed) editingEntryId = null;
+  populateSupplierSelect(document.getElementById('me-supplier'), true, ed ? ed.supplierId : null);
+  document.getElementById('me-date').value = ed ? ed.date : todayISO();
+  document.getElementById('me-fatsnf-row').style.display = settings.showFatSnf ? 'grid' : 'none';
+  if(ed){
+    document.getElementById('me-supplier').value = ed.supplierId;
+    setSeg('me-session', ed.session); setSeg('me-animal', ed.animalType);
+    document.getElementById('me-qty').value = ed.skipped ? '' : ed.quantity;
+    document.getElementById('me-rate').value = ed.rate;
+    document.getElementById('me-fat').value = ed.fat ?? ''; document.getElementById('me-snf').value = ed.snf ?? '';
+    updateAmountPreview();
+  } else {
+    document.getElementById('me-qty').value = '';
+    updateRateFromSupplier();
+  }
+  updateMilkEditUi();
+  renderTodayEntries();
+}
+document.getElementById('me-session').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+});
+document.getElementById('me-animal').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  [...e.currentTarget.children].forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateRateFromSupplier();
+});
+document.getElementById('me-supplier').addEventListener('change', ()=>{
+  if(!editingEntryId){ const s = getSupplier(document.getElementById('me-supplier').value); if(s) setSeg('me-animal', bulkAnimalFor(s)); }
+  updateRateFromSupplier();
+});
+function activeVal(containerId){ return document.querySelector('#'+containerId+' .active').dataset.val; }
+function updateRateFromSupplier(){
+  const supId = document.getElementById('me-supplier').value;
+  const animal = activeVal('me-animal');
+  const supplier = getSupplier(supId);
+  document.getElementById('me-rate').value = rateFor(supplier, animal);
+  updateAmountPreview();
+}
+function updateAmountPreview(){
+  const qty = parseFloat(document.getElementById('me-qty').value) || 0;
+  const rate = parseFloat(document.getElementById('me-rate').value) || 0;
+  document.getElementById('me-amount').textContent = rupee(qty*rate);
+}
+document.getElementById('me-qty').addEventListener('input', updateAmountPreview);
+document.getElementById('me-rate').addEventListener('input', updateAmountPreview);
+
+function renderTodayEntries(){
+  const today = document.getElementById('me-date').value || todayISO();
+  const tt = document.getElementById('todayEntriesTitle');
+  if(tt) tt.textContent = today===todayISO() ? "Today's entries" : 'Entries on ' + fmtDate(today);
+  const list = entries.filter(e=>e.date===today).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  document.getElementById('todayEntriesList').innerHTML = list.length ? list.map(e=>{
+    const sup = getSupplier(e.supplierId);
+    return `<div class="list-item" data-id="${e.id}">
+      <div class="avatar">${initials(sup?sup.name:'?')}</div>
+      <div class="li-main"><div class="name">${esc(sup?sup.name:'Unknown')}</div><div class="sub">${e.session} · ${e.animalType} · ₹${e.rate}/L</div></div>
+      <div class="li-right"><div class="amt">${qtyLabel(e)}</div><div class="sub">${rupee(e.amount)}</div></div>
+      <button data-edit="${e.id}" aria-label="Edit" style="background:none;border:none;color:var(--ink-soft);font-size:15px;cursor:pointer;">✎</button>
+      <button class="del-btn" data-del="${e.id}" aria-label="Delete" style="background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;">×</button>
+    </div>`;
+  }).join('') : '<div class="empty">No entries for this date.</div>';
+}
+document.getElementById('me-date').addEventListener('change', renderTodayEntries);
+document.getElementById('todayEntriesList').addEventListener('click', e=>{
+  const ed = e.target.closest('[data-edit]');
+  if(ed){
+    const en = entries.find(x=>x.id===ed.dataset.edit);
+    if(en && isLocked(en.date)){ document.getElementById('milkMsg').innerHTML = '<div class="msg err">That month is locked. Unlock it in Reports to change entries.</div>'; return; }
+    editingEntryId = ed.dataset.edit; nav('milk'); return;
+  }
+  const del = e.target.closest('[data-del]');
+  if(del){
+    const en = entries.find(x=>x.id===del.dataset.del);
+    if(en && isLocked(en.date)){ document.getElementById('milkMsg').innerHTML = '<div class="msg err">That month is locked. Unlock it in Reports to delete entries.</div>'; return; }
+    showConfirm('Delete entry?','This milk entry will be permanently removed.', async ()=>{
+      entries = entries.filter(x=>x.id!==del.dataset.del);
+      if(editingEntryId === del.dataset.del){ editingEntryId = null; updateMilkEditUi(); }
+      await saveEntries(); renderTodayEntries(); renderHome();
+    });
+  }
+});
+
+async function saveMilkEntry(skipMode){
+  const msg = document.getElementById('milkMsg');
+  msg.innerHTML = '';
+  const supplierId = document.getElementById('me-supplier').value;
+  const date = document.getElementById('me-date').value || todayISO();
+  const session = activeVal('me-session');
+  const animalType = activeVal('me-animal');
+  const quantity = skipMode ? 0 : parseFloat(document.getElementById('me-qty').value);
+  let rate = parseFloat(document.getElementById('me-rate').value);
+  const fat = settings.showFatSnf ? parseFloat(document.getElementById('me-fat').value)||null : null;
+  const snf = settings.showFatSnf ? parseFloat(document.getElementById('me-snf').value)||null : null;
+
+  if(!supplierId){ msg.innerHTML = '<div class="msg err">Please select a customer.</div>'; return; }
+  if(isLocked(date)){ msg.innerHTML = '<div class="msg err">This month is locked. Unlock it in Reports to add or change entries.</div>'; return; }
+  const old = editingEntryId ? entries.find(x=>x.id===editingEntryId) : null;
+  if(old && isLocked(old.date)){ msg.innerHTML = '<div class="msg err">The original entry is in a locked month.</div>'; return; }
+  if(skipMode){ if(isNaN(rate)) rate = 0; }
+  else {
+    if(isNaN(quantity) || quantity <= 0){ msg.innerHTML = '<div class="msg err">Milk quantity cannot be empty or negative.</div>'; return; }
+    if(isNaN(rate) || rate <= 0){ msg.innerHTML = '<div class="msg err">Rate must be above 0. Set default rates in Settings or a custom rate on the customer.</div>'; return; }
+  }
+
+  const dup = entries.find(e=>e.supplierId===supplierId && e.date===date && e.session===session && e.id!==editingEntryId);
+  if(dup && (settings.preventDuplicates || skipMode || dup.skipped)){
+    const sup = getSupplier(supplierId);
+    msg.innerHTML = `<div class="msg warn">${esc(session)} entry for ${esc(sup.name)} already exists for this date${dup.skipped?' (marked skipped — delete it first to add milk)':''}.</div>`;
+    return;
+  }
+
+  const data = { supplierId, date, session, animalType, quantity, fat, snf, rate, amount: round2(quantity*rate), skipped: !!skipMode };
+  if(old){ Object.assign(old, data); }
+  else entries.push(Object.assign({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,5), createdAt: new Date().toISOString() }, data));
+  const wasEdit = !!old;
+  editingEntryId = null;
+  await saveEntries();
+  updateMilkEditUi();
+  msg.innerHTML = `<div class="msg ok">${skipMode?'Marked as skipped.':(wasEdit?'Milk entry updated.':'Milk entry saved successfully.')}</div>`;
+  document.getElementById('me-qty').value = '';
+  updateAmountPreview();
+  renderTodayEntries();
+  renderHome();
+}
+document.getElementById('me-save').addEventListener('click', ()=>saveMilkEntry(false));
+document.getElementById('me-skip').addEventListener('click', ()=>saveMilkEntry(true));
+
+/* ---------- BULK ENTRY ---------- */
+function lastQtyFor(supId, session){
+  const list = entries.filter(e=>e.supplierId===supId && e.session===session && !e.skipped && e.quantity>0).sort((a,b)=>b.date.localeCompare(a.date));
+  return list.length ? list[0].quantity : null;
+}
+function bulkAnimalFor(s){ return (s.animalType==='Cow' || s.animalType==='Other') ? s.animalType : 'Buffalo'; }
+function renderBulkView(){
+  const d = document.getElementById('bk-date');
+  d.value = todayISO();
+  document.getElementById('bulkMsg').innerHTML = '';
+  renderBulkList();
+}
+function renderBulkList(){
+  const date = document.getElementById('bk-date').value || todayISO();
+  const session = document.getElementById('bk-session').value;
+  const active = suppliers.filter(s=>s.active!==false);
+  document.getElementById('bulkList').innerHTML = active.length ? active.map(s=>{
+    const existing = entries.find(e=>e.supplierId===s.id && e.date===date && e.session===session);
+    if(existing){
+      return `<div class="list-item"><div class="avatar">${initials(s.name)}</div><div class="li-main"><div class="name">${esc(s.name)}</div><div class="sub">Already entered</div></div><div class="li-right"><div class="amt">${qtyLabel(existing)}</div></div></div>`;
+    }
+    const q = lastQtyFor(s.id, session) ?? (s.numAnimals || '');
+    const an = bulkAnimalFor(s);
+    return `<div class="list-item" data-bk="${s.id}" data-skip="0">
+      <div class="avatar">${initials(s.name)}</div>
+      <div class="li-main"><div class="name">${esc(s.name)}</div>
+        <select class="bk-animal" style="width:auto;margin:4px 0 0;padding:4px 6px;font-size:11.5px;">
+          ${['Buffalo','Cow','Other'].map(a=>`<option${a===an?' selected':''}>${a}</option>`).join('')}
+        </select></div>
+      <input type="number" class="mono bk-qty" step="0.05" min="0" value="${q}" placeholder="L" style="width:84px;margin:0;padding:8px;text-align:right;">
+      <button type="button" class="bk-skip" aria-label="Mark absent" style="background:none;border:1px solid var(--line);border-radius:8px;width:34px;height:34px;cursor:pointer;color:var(--ink-soft);">✕</button>
+    </div>`;
+  }).join('') : '<div class="empty">Add customers first.</div>';
+  updateBulkTotals();
+}
+function updateBulkTotals(){
+  const rows = [...document.querySelectorAll('#bulkList [data-bk]')];
+  let n = 0, tot = 0;
+  rows.forEach(r=>{ if(r.dataset.skip==='1') return; const q = parseFloat(r.querySelector('.bk-qty').value); if(q>0){ n++; tot += q; } });
+  document.getElementById('bulkCount').textContent = n + ' customer' + (n===1?'':'s') + ' to save';
+  document.getElementById('bulkTotal').textContent = tot.toFixed(2).replace(/\.?0+$/,'') + ' L';
+}
+document.getElementById('bk-date').addEventListener('change', renderBulkList);
+document.getElementById('bk-session').addEventListener('change', renderBulkList);
+document.getElementById('bulkList').addEventListener('input', updateBulkTotals);
+document.getElementById('bulkList').addEventListener('click', e=>{
+  const b = e.target.closest('.bk-skip'); if(!b) return;
+  const row = b.closest('[data-bk]');
+  const on = row.dataset.skip !== '1';
+  row.dataset.skip = on ? '1' : '0';
+  row.style.opacity = on ? '0.5' : '1';
+  b.style.background = on ? 'var(--red-tint)' : 'none';
+  row.querySelector('.bk-qty').disabled = on;
+  updateBulkTotals();
+});
+document.getElementById('bk-save').addEventListener('click', async ()=>{
+  const msg = document.getElementById('bulkMsg');
+  const date = document.getElementById('bk-date').value || todayISO();
+  const session = document.getElementById('bk-session').value;
+  if(isLocked(date)){ msg.innerHTML = '<div class="msg err">This month is locked. Unlock it in Reports first.</div>'; return; }
+  let saved = 0, skipped = 0, bad = 0;
+  const noRate = [];
+  document.querySelectorAll('#bulkList [data-bk]').forEach(r=>{
+    const id = r.dataset.bk, s = getSupplier(id);
+    if(!s || entries.some(e=>e.supplierId===id && e.date===date && e.session===session)) return;
+    const animalType = r.querySelector('.bk-animal').value;
+    const rate = rateFor(s, animalType);
+    const base = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), supplierId:id, date, session, animalType, fat:null, snf:null, rate, createdAt:new Date().toISOString() };
+    if(r.dataset.skip === '1'){ entries.push(Object.assign(base, { quantity:0, amount:0, skipped:true })); skipped++; return; }
+    const raw = r.querySelector('.bk-qty').value;
+    if(raw === '') return;
+    const q = parseFloat(raw);
+    if(isNaN(q) || q <= 0){ bad++; return; }
+    if(!(rate > 0)){ noRate.push(s.name); return; }
+    entries.push(Object.assign(base, { quantity:q, amount:round2(q*rate), skipped:false })); saved++;
+  });
+  const rateWarn = noRate.length ? `<div class="msg warn">Not saved — rate is 0 for: ${noRate.map(esc).join(', ')}. Set a default rate in Settings or a custom rate on the customer.</div>` : '';
+  if(!saved && !skipped){ msg.innerHTML = rateWarn + (rateWarn ? '' : '<div class="msg warn">' + (bad ? 'Some quantities were invalid (must be above 0).' : 'Nothing to save — enter a quantity for at least one customer.') + '</div>'); return; }
+  await saveEntries();
+  msg.innerHTML = `<div class="msg ok">Saved ${saved} entr${saved===1?'y':'ies'}${skipped?`, ${skipped} marked absent`:''}${bad?` · ${bad} invalid skipped`:''}.</div>` + rateWarn;
+  renderBulkList(); renderHome();
+});
+
+/* ---------- REMINDERS (WhatsApp) ---------- */
+function normMobile(m){
+  let d = String(m||'').replace(/\D/g,'');
+  if(d.length===12 && d.startsWith('91')) d = d.slice(2);
+  else if(d.length===11 && d[0]==='0') d = d.slice(1);
+  return d.length===10 ? d : null;
+}
+function waNumber(m){ const n = normMobile(m); return n ? '91' + n : ''; }
+function reminderText(s){
+  const bal = supplierBalance(s.id).balance;
+  const sign = `\nDhanyavaad — ${settings.milkmanName || 'Chauhan Dairy'}`;
+  if(bal < -0.5) return `Namaste ${s.name} ji,\nAapka ${rupee(-bal)} advance jama hai, jo aage ke doodh me adjust hoga.` + sign;
+  if(bal <= 0.5) return `Namaste ${s.name} ji,\nAapka doodh ka koi bakaya nahi hai.` + sign;
+  let txt = `Namaste ${s.name} ji,\nAapka doodh ka bakaya (outstanding) ${rupee(bal)} hai.`;
+  if(settings.myUpi) txt += `\nKripya UPI se bhej dein: ${settings.myUpi}`;
+  return txt + sign;
+}
+function openWhatsApp(s){
+  const num = waNumber(s.mobile);
+  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(reminderText(s)), '_blank');
+}
+function renderRemindersView(){
+  const due = suppliers.map(s=>({s, bal: supplierBalance(s.id).balance})).filter(x=>x.bal>0.5).sort((a,b)=>b.bal-a.bal);
+  document.getElementById('reminderList').innerHTML = due.length ? due.map(({s,bal})=>`
+    <div class="list-item">
+      <div class="avatar">${initials(s.name)}</div>
+      <div class="li-main"><div class="name">${esc(s.name)}</div><div class="sub">${s.mobile?esc(s.mobile):'No mobile saved'}</div></div>
+      <div class="li-right"><div class="amt" style="color:var(--red);">${rupee(bal)}</div></div>
+      <button class="btn small blue" data-wa="${s.id}">💬</button>
+    </div>`).join('') : '<div class="empty">Nobody owes you anything. All clear!</div>';
+}
+document.getElementById('reminderList').addEventListener('click', e=>{
+  const b = e.target.closest('[data-wa]'); if(!b) return;
+  const s = getSupplier(b.dataset.wa); if(s) openWhatsApp(s);
+});
+
+/* ---------- SUPPLIERS ---------- */
+function renderSupplierList(){
+  const q = (document.getElementById('supplierSearch').value||'').toLowerCase();
+  const list = suppliers.filter(s => !q || s.name.toLowerCase().includes(q) || s.code.toLowerCase().includes(q) || (s.mobile||'').includes(q));
+  document.getElementById('supplierList').innerHTML = list.length ? list.map(s=>{
+    const today = todayISO();
+    const todayMilk = entries.filter(e=>e.supplierId===s.id && e.date===today).reduce((sum,e)=>sum+e.quantity,0);
+    const bal = supplierBalance(s.id).balance;
+    const pill = bal>0.5 ? `<span class="balance-pill due">${rupee(bal)}</span>`
+      : bal<-0.5 ? `<span class="balance-pill clear">Advance ${rupee(-bal)}</span>`
+      : `<span class="balance-pill clear">Clear</span>`;
+    return `<div class="list-item" data-open="${s.id}" style="cursor:pointer;${s.active===false?'opacity:.55;':''}">
+      <div class="avatar">${initials(s.name)}</div>
+      <div class="li-main"><div class="name">${esc(s.code)} — ${esc(s.name)}</div><div class="sub">${esc(s.animalType)} · Today: ${todayMilk.toFixed(1)} L${s.active===false?' · Inactive':''}</div></div>
+      <div class="li-right">${pill}</div>
+    </div>`;
+  }).join('') : '<div class="empty">No customers yet. Add your first customer to get started.</div>';
+}
+document.getElementById('supplierSearch').addEventListener('input', renderSupplierList);
+document.getElementById('supplierList').addEventListener('click', e=>{
+  const row = e.target.closest('[data-open]'); if(!row) return;
+  currentSupplierId = row.dataset.open;
+  renderSupplierProfile();
+  nav('supplier-profile');
+});
+
+const SP_FIELDS = ['sp-name','sp-father','sp-mobile','sp-address','sp-numanimals','sp-rate-buffalo','sp-rate-cow','sp-rate-other','sp-notes'];
+function resetSupplierForm(){
+  SP_FIELDS.forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sp-animal').value = 'Buffalo';
+  document.getElementById('sp-start').value = todayISO();
+  document.getElementById('supplierMsg').innerHTML = '';
+  document.getElementById('sp-title').textContent = 'Add Customer';
+  document.getElementById('sp-save').textContent = 'Save Customer';
+}
+function fillSupplierForm(){
+  const s = getSupplier(editingSupplierId);
+  if(!s){ editingSupplierId = null; return resetSupplierForm(); }
+  document.getElementById('sp-name').value = s.name || '';
+  document.getElementById('sp-father').value = s.father || '';
+  document.getElementById('sp-mobile').value = s.mobile || '';
+  document.getElementById('sp-address').value = s.address || '';
+  document.getElementById('sp-animal').value = s.animalType || 'Buffalo';
+  document.getElementById('sp-numanimals').value = s.numAnimals || '';
+  const legacy = (!s.rates && s.rate) ? s.rate : '';
+  document.getElementById('sp-rate-buffalo').value = (s.rates && s.rates.Buffalo) || legacy;
+  document.getElementById('sp-rate-cow').value = (s.rates && s.rates.Cow) || legacy;
+  document.getElementById('sp-rate-other').value = (s.rates && s.rates.Other) || legacy;
+  document.getElementById('sp-start').value = s.startDate || todayISO();
+  document.getElementById('sp-notes').value = s.notes || '';
+  document.getElementById('supplierMsg').innerHTML = '';
+  document.getElementById('sp-title').textContent = 'Edit Customer';
+  document.getElementById('sp-save').textContent = 'Update Customer';
+}
+document.getElementById('sp-save').addEventListener('click', async ()=>{
+  const msg = document.getElementById('supplierMsg');
+  const name = document.getElementById('sp-name').value.trim();
+  if(!name){ msg.innerHTML = "<div class=\"msg err\">Please enter the customer's name.</div>"; return; }
+  const mobile = document.getElementById('sp-mobile').value.trim();
+  if(mobile && !normMobile(mobile)){ msg.innerHTML = '<div class="msg err">Mobile number looks wrong — enter 10 digits.</div>'; return; }
+  const rates = {};
+  [['Buffalo','sp-rate-buffalo'],['Cow','sp-rate-cow'],['Other','sp-rate-other']].forEach(([k,id])=>{
+    const v = parseFloat(document.getElementById(id).value); if(v>0) rates[k] = v;
+  });
+  const fields = {
+    name,
+    father: document.getElementById('sp-father').value.trim(),
+    mobile,
+    address: document.getElementById('sp-address').value.trim(),
+    animalType: document.getElementById('sp-animal').value,
+    numAnimals: parseFloat(document.getElementById('sp-numanimals').value)||0,
+    rates, rate: null,
+    startDate: document.getElementById('sp-start').value || todayISO(),
+    notes: document.getElementById('sp-notes').value.trim()
+  };
+  const existing = editingSupplierId ? getSupplier(editingSupplierId) : null;
+  if(existing){
+    Object.assign(existing, fields);
+    await saveSuppliers();
+    currentSupplierId = existing.id; editingSupplierId = null;
+    renderHome(); renderSupplierProfile(); nav('supplier-profile');
+    return;
+  }
+  suppliers.push(Object.assign({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,5), code: nextSupplierCode(), active: true }, fields));
+  await saveSuppliers();
+  resetSupplierForm();
+  msg.innerHTML = '<div class="msg ok">Customer saved.</div>';
+  renderHome();
+});
+
+function buildUpiUri(upi, name, amount, note){
+  let uri = `upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(name)}&cu=INR`;
+  if(amount > 0) uri += `&am=${amount.toFixed(2)}`;
+  if(note) uri += `&tn=${encodeURIComponent(note)}`;
+  return uri;
+}
+async function shareImageBlob(blob, filenameBase, shareTitle){
+  const filename = filenameBase + '.png';
+  await downloadsCapReady;
+  if(downloadsCap){
+    return offerFileSave(filename, blob);
+  }
+  const file = new File([blob], filename, {type: blob.type || 'image/png'});
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({ files:[file], title: shareTitle || 'QR Code' });
+      return { ok:true };
+    }catch(err){
+      if(err && err.name === 'AbortError') return { ok:false, message:'Share cancelled.' };
+    }
+  }
+  return offerFileSave(filename, blob);
+}
+function imgToPngBlob(img){
+  return new Promise((resolve, reject)=>{
+    try{
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width || 200;
+      canvas.height = img.naturalHeight || img.height || 200;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob)=> blob ? resolve(blob) : reject(new Error('Could not read the QR image.')), 'image/png');
+    }catch(e){ reject(e); }
+  });
+}
+async function shareQrFromContainer(containerId, statusId, supplierName){
+  const img = document.querySelector('#'+containerId+' img');
+  const statusEl = statusId ? document.getElementById(statusId) : null;
+  if(!img || !img.src){ if(statusEl) statusEl.textContent = 'QR not ready yet.'; return; }
+  try{
+    if(img.decode){ try{ await img.decode(); }catch(e){} }
+    else if(!img.complete){ await new Promise(res=>{ img.onload=res; img.onerror=res; }); }
+    const blob = await imgToPngBlob(img);
+    const result = await shareImageBlob(blob, 'MilkMitra_QR_'+(supplierName||'payment').replace(/\s+/g,'_'), 'Payment QR - '+(supplierName||''));
+    if(statusEl) statusEl.textContent = result.ok ? 'QR shared/saved.' : (result.message || '');
+  }catch(e){
+    if(statusEl) statusEl.textContent = 'Could not share QR' + (e && e.message ? ': '+e.message : '.') + ' Try "Download Statement" area or a screenshot instead.';
+  }
+}
+function renderQR(container, uri){
+  try{
+    let qr = null, lastErr = null;
+    for(let type=1; type<=40; type++){
+      try{
+        qr = qrcode(type, 'M');
+        qr.addData(uri);
+        qr.make();
+        lastErr = null;
+        break;
+      }catch(e){ lastErr = e; qr = null; }
+    }
+    if(!qr) throw lastErr || new Error('QR generation failed');
+    container.innerHTML = qr.createImgTag(5, 8);
+    const img = container.querySelector('img');
+    if(img){ img.style.width='176px'; img.style.height='176px'; img.style.imageRendering='pixelated'; img.style.display='block'; }
+  }catch(e){
+    container.innerHTML = '<div class="empty">Could not generate QR for this UPI ID.</div>';
+  }
+}
+function renderPfQr(s){
+  const body = document.getElementById('pf-qrBody');
+  if(!body) return;
+  if(!settings.myUpi){
+    body.innerHTML = `
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;">Add your own UPI ID in Settings to generate a payment-request QR for this customer.</p>
+      <button class="btn small blue" id="pf-openSettingsBtn">Open Settings</button>
+    `;
+    document.getElementById('pf-openSettingsBtn').addEventListener('click', openSettings);
+    return;
+  }
+  const bal = supplierBalance(s.id).balance;
+  body.innerHTML = `
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="pf-qrImgWrap" style="flex:0 0 auto;background:#fff;padding:8px;border-radius:10px;border:1px solid var(--line);"></div>
+      <div style="flex:1;min-width:150px;">
+        <label for="pf-qrAmount" style="margin-top:0;">Amount to request (₹)</label>
+        <input type="number" class="mono" id="pf-qrAmount" step="1" min="0" value="${bal>0.5?bal.toFixed(0):''}" placeholder="Leave blank for open amount">
+        <div style="font-size:11px;color:var(--ink-soft);">Paid to your UPI ID: <b>${esc(settings.myUpi)}</b><br>Note tag: ${esc(s.name)} (${esc(s.code)})</div>
+        <button class="btn small outline" id="pf-shareQr" style="margin-top:8px;">📤 Share QR (WhatsApp)</button>
+        <div id="pf-qrShareStatus" style="font-size:11px;color:var(--ink-soft);margin-top:6px;"></div>
+      </div>
+    </div>
+  `;
+  const imgWrap = document.getElementById('pf-qrImgWrap');
+  const amountInput = document.getElementById('pf-qrAmount');
+  function refreshQr(){
+    const amt = parseFloat(amountInput.value)||0;
+    renderQR(imgWrap, buildUpiUri(settings.myUpi, settings.milkmanName || 'Milk Payment', amt, s.name+' - '+s.code));
+  }
+  refreshQr();
+  amountInput.addEventListener('input', refreshQr);
+  document.getElementById('pf-shareQr').addEventListener('click', ()=>shareQrFromContainer('pf-qrImgWrap','pf-qrShareStatus', s.name));
+}
+function rateSummary(s){
+  const parts = [];
+  if(s.rates) ['Buffalo','Cow','Other'].forEach(k=>{ if(s.rates[k]) parts.push(k+' ₹'+s.rates[k]); });
+  if(!parts.length && s.rate) return '₹'+s.rate+'/L (all types)';
+  return parts.length ? parts.join(', ') : 'Uses default';
+}
+function paymentRowHtml(p, showName){
+  const s = getSupplier(p.supplierId);
+  return `<div class="list-item"><div class="li-main"><div class="name">${rupee(p.amount)}${showName?' · '+esc(s?s.name:'Unknown'):''}</div><div class="sub">${fmtDate(p.date)} · ${esc(p.mode)}${p.reference?' · '+esc(p.reference):''}</div></div>
+    <button class="btn small outline" data-pdfpay="${p.id}" aria-label="PDF">📄</button>
+    <button class="btn small outline" data-editpay="${p.id}" aria-label="Edit payment" style="margin-left:4px;">✎</button>
+    <button class="btn small outline" data-delpay="${p.id}" aria-label="Delete payment" style="margin-left:4px;">🗑</button></div>`;
+}
+function renderSupplierProfile(){
+  const s = getSupplier(currentSupplierId);
+  if(!s) return nav('suppliers');
+  document.getElementById('pf-name').textContent = `${s.code} — ${s.name}`;
+  document.getElementById('pf-meta').textContent = `${s.mobile||'No mobile'} · ${s.animalType} · ${s.numAnimals?s.numAnimals+' L/day':'no daily qty'}${s.active===false?' · Inactive':''}`;
+  document.getElementById('pf-toggleActive').textContent = s.active===false ? '▶ Reactivate Customer' : '⏸ Deactivate Customer';
+
+  const monthNow = monthKey(todayISO());
+  const monthMilk = supplierEntries(s.id).filter(e=>monthKey(e.date)===monthNow).reduce((sum,e)=>sum+e.quantity,0);
+  const { totalAmount, totalPaid, balance } = supplierBalance(s.id);
+  document.getElementById('pf-monthMilk').textContent = monthMilk.toFixed(1)+' L';
+  document.getElementById('pf-totalValue').textContent = rupee(totalAmount);
+  document.getElementById('pf-paid').textContent = rupee(totalPaid);
+  document.getElementById('pf-balLbl').textContent = balance < -0.5 ? 'Advance' : 'Outstanding';
+  document.getElementById('pf-balance').textContent = rupee(Math.abs(balance));
+
+  renderPfQr(s);
+  renderPfStatementSelect(s);
+  const hist = supplierEntries(s.id).sort((a,b)=>b.date.localeCompare(a.date));
+  const historyRows = `<tr><th>Date</th><th>Session</th><th>Animal</th><th class="num">L</th><th class="num">Rate</th><th class="num">Amount</th></tr>` +
+    (hist.length ? hist.map(e=>`<tr><td>${fmtDate(e.date)}</td><td>${e.session}</td><td>${e.animalType}</td><td class="num">${e.skipped?'Skipped':e.quantity}</td><td class="num">₹${e.rate}</td><td class="num">${rupee(e.amount)}</td></tr>`).join('')
+    : `<tr><td colspan="6" style="color:var(--ink-soft);">No entries yet.</td></tr>`);
+  document.getElementById('pf-historyTable').innerHTML = historyRows;
+
+  const pays = supplierPayments(s.id).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('pf-paymentsList').innerHTML = pays.length ? pays.map(p=>paymentRowHtml(p,false)).join('') : '<div class="empty">No payments recorded yet.</div>';
+
+  document.getElementById('pf-summaryBody').innerHTML = `
+    <div class="list-item"><div class="li-main sub">Supply start date</div><div class="li-right">${fmtDate(s.startDate)}</div></div>
+    <div class="list-item"><div class="li-main sub">Custom rate</div><div class="li-right" style="max-width:200px;">${esc(rateSummary(s))}</div></div>
+    <div class="list-item"><div class="li-main sub">Total milk supplied</div><div class="li-right">${supplierEntries(s.id).reduce((sum,e)=>sum+e.quantity,0).toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Days skipped</div><div class="li-right">${supplierEntries(s.id).filter(e=>e.skipped).length}</div></div>
+    <div class="list-item"><div class="li-main sub">Address</div><div class="li-right" style="text-align:right;max-width:200px;">${esc(s.address)||'—'}</div></div>
+    <div class="list-item"><div class="li-main sub">Notes</div><div class="li-right" style="text-align:right;max-width:200px;">${esc(s.notes)||'—'}</div></div>
+  `;
+}
+document.getElementById('pf-edit').addEventListener('click', ()=>{ editingSupplierId = currentSupplierId; nav('add-supplier'); });
+document.getElementById('pf-whatsapp').addEventListener('click', ()=>{ const s = getSupplier(currentSupplierId); if(s) openWhatsApp(s); });
+document.getElementById('pf-toggleActive').addEventListener('click', ()=>{
+  const s = getSupplier(currentSupplierId); if(!s) return;
+  const deactivating = s.active !== false;
+  showConfirm(deactivating ? 'Deactivate customer?' : 'Reactivate customer?',
+    deactivating ? 'They will no longer appear in entry lists. All history and balance are kept.' : 'They will appear in entry lists again.',
+    async ()=>{ s.active = !deactivating; await saveSuppliers(); renderSupplierProfile(); renderHome(); });
+});
+document.getElementById('pf-deleteCustomer').addEventListener('click', ()=>{
+  const s = getSupplier(currentSupplierId); if(!s) return;
+  const milkCount = entries.filter(e=>e.supplierId===s.id).length;
+  const paymentCount = payments.filter(p=>p.supplierId===s.id).length;
+  showConfirm('Delete customer permanently?',
+    `Delete ${s.name} (${s.code})? This will permanently remove the customer and their ${milkCount} milk entries and ${paymentCount} payment records from this device. Download a backup first if you may need this history. This cannot be undone.`,
+    async ()=>{
+      suppliers = suppliers.filter(x=>x.id!==s.id);
+      entries = entries.filter(x=>x.supplierId!==s.id);
+      payments = payments.filter(x=>x.supplierId!==s.id);
+      await Promise.all([saveSuppliers(), saveEntries(), savePayments()]);
+      currentSupplierId = null;
+      renderSupplierList(); renderHome(); renderPayments();
+      nav('suppliers');
+    });
+});
+document.querySelectorAll('.tabbar').forEach(bar=>{
+  bar.addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    const isReport = btn.dataset.rtab !== undefined;
+    const key = isReport ? 'rtab' : 'tab';
+    const attr = isReport ? 'rtab' : 'tab';
+    [...bar.children].forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const parent = bar.parentElement;
+    parent.querySelectorAll('.subview').forEach(sv=>sv.classList.remove('active'));
+    const targetId = isReport ? 'rtab-'+btn.dataset.rtab : 'pf-tab-'+btn.dataset.tab;
+    const target = document.getElementById(targetId);
+    if(target) target.classList.add('active');
+  });
+});
+document.getElementById('pf-recordPayment').addEventListener('click', ()=>{
+  editingPaymentId = null; payPrefillId = currentSupplierId; payReturn = 'supplier-profile';
+  nav('add-payment');
+});
+
+/* ---------- PAYMENTS ---------- */
+function renderPaymentsView(){
+  const withBalance = suppliers.map(s=>({s, bal: supplierBalance(s.id).balance})).filter(x=>x.bal>0.5).sort((a,b)=>b.bal-a.bal);
+  document.getElementById('outstandingList').innerHTML = withBalance.length ? withBalance.map(({s,bal})=>{
+    const dot = bal>2000?'🔴':bal>800?'🟠':'🟡';
+    return `<div class="list-item">
+      <div class="li-main"><div class="name">${dot} ${esc(s.name)}</div><div class="sub">${esc(s.code)}</div></div>
+      <div class="li-right"><div class="amt" style="color:var(--red);">${rupee(bal)}</div></div>
+      <button class="btn small blue" data-payid="${s.id}">Pay</button>
+    </div>`;
+  }).join('') : '<div class="empty">No outstanding balances. All clear!</div>';
+
+  const allPays = [...payments].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('paymentsList').innerHTML = allPays.length ? allPays.map(p=>paymentRowHtml(p,true)).join('') : '<div class="empty">No payments recorded yet.</div>';
+}
+document.addEventListener('click', e=>{
+  const ed = e.target.closest('[data-editpay]');
+  if(ed){ editingPaymentId = ed.dataset.editpay; payPrefillId = null; payReturn = document.getElementById('view-supplier-profile').classList.contains('active') ? 'supplier-profile' : 'payments'; nav('add-payment'); return; }
+  const dl = e.target.closest('[data-delpay]');
+  if(dl){
+    showConfirm('Delete payment?', 'This payment will be removed and the customer\'s balance will go back up.', async ()=>{
+      payments = payments.filter(p=>p.id!==dl.dataset.delpay);
+      await savePayments(); renderHome();
+      if(document.getElementById('view-supplier-profile').classList.contains('active')) renderSupplierProfile(); else renderPaymentsView();
+    });
+  }
+});
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-pdfpay]'); if(!btn) return;
+  const id = btn.dataset.pdfpay;
+  const orig = btn.textContent;
+  btn.textContent = '⏳'; btn.disabled = true;
+  savePaymentAsPDF(id).then(ok=>{ if(!ok) alert('Could not create the PDF — the PDF library did not load. Connect to the internet once and try again.'); })
+    .catch(()=>alert('Could not create the PDF.'))
+    .finally(()=>{ btn.textContent = orig; btn.disabled = false; });
+});
+document.getElementById('outstandingList').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-payid]'); if(!btn) return;
+  editingPaymentId = null; payPrefillId = btn.dataset.payid;
+  nav('add-payment');
+});
+
+function renderAddPaymentView(){
+  const ed = editingPaymentId ? payments.find(p=>p.id===editingPaymentId) : null;
+  if(editingPaymentId && !ed) editingPaymentId = null;
+  populateSupplierSelect(document.getElementById('pay-supplier'), true, ed ? ed.supplierId : payPrefillId);
+  if(ed){
+    document.getElementById('pay-supplier').value = ed.supplierId;
+    document.getElementById('pay-date').value = ed.date;
+    document.getElementById('pay-amount').value = ed.amount;
+    document.getElementById('pay-mode').value = ed.mode;
+    document.getElementById('pay-ref').value = ed.reference || '';
+    document.getElementById('pay-notes').value = ed.notes || '';
+  } else {
+    if(payPrefillId) document.getElementById('pay-supplier').value = payPrefillId;
+    document.getElementById('pay-date').value = todayISO();
+    document.getElementById('pay-amount').value = '';
+    document.getElementById('pay-ref').value = '';
+    document.getElementById('pay-notes').value = '';
+  }
+  payPrefillId = null;
+  document.getElementById('pay-title').textContent = ed ? 'Edit Payment' : 'Record Payment';
+  document.getElementById('pay-save').textContent = ed ? 'Update Payment' : 'Save Payment';
+  document.getElementById('paymentMsg').innerHTML = '';
+  updatePaymentPreview();
+}
+function updatePaymentPreview(){
+  const supId = document.getElementById('pay-supplier').value;
+  const prev = supId ? supplierBalance(supId, editingPaymentId).balance : 0;
+  const amt = parseFloat(document.getElementById('pay-amount').value)||0;
+  const rem = round2(prev - amt);
+  document.getElementById('pay-prevBalance').textContent = rupee(prev);
+  document.getElementById('pay-remBalance').textContent = rupee(rem);
+  document.getElementById('payWarn').innerHTML = (supId && rem < -0.5)
+    ? `<div class="msg warn">This is ${rupee(-rem)} more than the customer owes. The extra will be kept as an advance and adjusted against future milk.</div>` : '';
+  updatePaymentQr();
+}
+function updatePaymentQr(){
+  const supId = document.getElementById('pay-supplier').value;
+  const card = document.getElementById('payQrCard');
+  const body = document.getElementById('payQrBody');
+  const s = getSupplier(supId);
+  if(!s || !settings.myUpi){ card.style.display='none'; return; }
+  card.style.display='block';
+  const amt = parseFloat(document.getElementById('pay-amount').value)||0;
+  renderQR(body, buildUpiUri(settings.myUpi, settings.milkmanName || 'Milk Payment', amt, s.name+' - '+s.code));
+}
+document.getElementById('pay-supplier').addEventListener('change', updatePaymentPreview);
+document.getElementById('pay-amount').addEventListener('input', updatePaymentPreview);
+document.getElementById('payShareQr').addEventListener('click', ()=>{
+  const s = getSupplier(document.getElementById('pay-supplier').value);
+  shareQrFromContainer('payQrBody', 'payQrShareStatus', s ? s.name : '');
+});
+document.getElementById('pay-save').addEventListener('click', async ()=>{
+  const msg = document.getElementById('paymentMsg');
+  const supplierId = document.getElementById('pay-supplier').value;
+  const amount = round2(parseFloat(document.getElementById('pay-amount').value));
+  if(!supplierId){ msg.innerHTML = '<div class="msg err">Please select a customer.</div>'; return; }
+  if(isNaN(amount) || amount <= 0){ msg.innerHTML = '<div class="msg err">Please enter a valid amount.</div>'; return; }
+  const fields = {
+    supplierId, date: document.getElementById('pay-date').value || todayISO(),
+    amount, mode: document.getElementById('pay-mode').value,
+    reference: document.getElementById('pay-ref').value.trim(),
+    notes: document.getElementById('pay-notes').value.trim()
+  };
+  const existing = editingPaymentId ? payments.find(p=>p.id===editingPaymentId) : null;
+  if(existing){
+    Object.assign(existing, fields);
+    await savePayments();
+    editingPaymentId = null;
+    renderHome(); nav(payReturn);
+    return;
+  }
+  const newPayment = Object.assign({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,5), createdAt: new Date().toISOString() }, fields);
+  payments.push(newPayment);
+  await savePayments();
+  msg.innerHTML = '<div class="msg ok">Payment recorded successfully.' + (settings.autoPaymentPdf ? ' Saving PDF record…' : '') + '</div>';
+  document.getElementById('pay-amount').value=''; document.getElementById('pay-ref').value=''; document.getElementById('pay-notes').value='';
+  updatePaymentPreview();
+  renderHome();
+  if(settings.autoPaymentPdf) savePaymentAsPDF(newPayment.id).then(ok=>{
+    msg.innerHTML = ok ? '<div class="msg ok">Payment recorded. PDF record saved — you can print it anytime from Payments.</div>'
+      : '<div class="msg warn">Payment recorded, but the PDF could not be created (PDF library not loaded — connect to the internet once). You can make it later from Payments.</div>';
+  }).catch(()=>{
+    msg.innerHTML = '<div class="msg warn">Payment recorded, but the PDF could not be saved. You can make it later from Payments.</div>';
+  });
+});
+
+/* ---------- payment-cycle PDF: auto-save after payment, printable anytime later ---------- */
+function makeOffscreenHolder(html, extraStyle){
+  const holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;width:760px;background:#fff;color:#111;' + (extraStyle||'');
+  holder.innerHTML = html;
+  document.body.appendChild(holder);
+  return holder;
+}
+/* resolves true when a PDF was produced, false when it could not be (e.g. PDF library not loaded) */
+function savePaymentAsPDF(paymentId){
+  const p = payments.find(x=>x.id===paymentId);
+  if(!p) return Promise.resolve(false);
+  const s = getSupplier(p.supplierId);
+  if(!s || typeof html2pdf === 'undefined') return Promise.resolve(false);
+  const range = getPaymentCycleRange(s, paymentId);
+  const filter = range ? {type:'range', from:range.from, to:range.to,
+    label: (range.from ? 'After '+fmtDate(range.from)+' — ' : 'Up to ') + fmtDate(range.to) + ' (payment cycle)'}
+    : {type:'all'};
+  const holder = makeOffscreenHolder(buildStatementHtml(s, filter, false), 'padding:24px;font-family:Inter,sans-serif;');
+  const filename = `MilkMitra_${s.code}_${s.name.replace(/\s+/g,'_')}_${p.date}_${String(p.id).slice(-4)}.pdf`;
+  return new Promise(r=>setTimeout(r,60)).then(()=>
+    html2pdf().set({ filename, margin:8, html2canvas:{scale:2, backgroundColor:'#ffffff'}, jsPDF:{unit:'pt', format:'a4'} }).from(holder).save()
+  ).then(()=>{ holder.remove(); return true; })
+   .catch(err=>{ holder.remove(); throw err; });
+}
+
+/* ---------- REPORTS ---------- */
+function renderReportsView(){
+  document.getElementById('rep-date').value = todayISO();
+  document.getElementById('rep-month').value = monthKey(todayISO());
+  renderDailyReport(); renderMonthlyReport();
+}
+document.getElementById('rep-date').addEventListener('change', renderDailyReport);
+document.getElementById('rep-month').addEventListener('change', renderMonthlyReport);
+
+function renderDailyReport(){
+  const date = document.getElementById('rep-date').value || todayISO();
+  const list = entries.filter(e=>e.date===date);
+  const morning = list.filter(e=>e.session==='Morning').reduce((s,e)=>s+e.quantity,0);
+  const evening = list.filter(e=>e.session==='Evening').reduce((s,e)=>s+e.quantity,0);
+  const buffalo = list.filter(e=>e.animalType==='Buffalo').reduce((s,e)=>s+e.quantity,0);
+  const cow = list.filter(e=>e.animalType==='Cow').reduce((s,e)=>s+e.quantity,0);
+  const other = list.filter(e=>e.animalType==='Other').reduce((s,e)=>s+e.quantity,0);
+  const value = list.reduce((s,e)=>s+e.amount,0);
+  const paid = payments.filter(p=>p.date===date).reduce((s,p)=>s+p.amount,0);
+  document.getElementById('rep-dailyBody').innerHTML = `
+    <div class="list-item"><div class="li-main sub">Morning Milk</div><div class="li-right amt">${morning.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Evening Milk</div><div class="li-right amt">${evening.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub"><b>Total</b></div><div class="li-right amt"><b>${(morning+evening).toFixed(1)} L</b></div></div>
+    <div class="list-item"><div class="li-main sub">🐃 Buffalo</div><div class="li-right amt">${buffalo.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">🐄 Cow</div><div class="li-right amt">${cow.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Other</div><div class="li-right amt">${other.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Total Milk Value</div><div class="li-right amt">${rupee(value)}</div></div>
+    <div class="list-item"><div class="li-main sub">Payments Made</div><div class="li-right amt">${rupee(paid)}</div></div>
+  `;
+}
+function renderMonthlyReport(){
+  const month = document.getElementById('rep-month').value || monthKey(todayISO());
+  const monthEntries = entries.filter(e=>monthKey(e.date)===month);
+  const monthPayments = payments.filter(p=>monthKey(p.date)===month);
+  const totalMilk = monthEntries.reduce((s,e)=>s+e.quantity,0);
+  const totalValue = monthEntries.reduce((s,e)=>s+e.amount,0);
+  const totalPaid = monthPayments.reduce((s,p)=>s+p.amount,0);
+  const activeSuppliers = new Set(monthEntries.filter(e=>!e.skipped).map(e=>e.supplierId)).size;
+  const daysInData = new Set(monthEntries.map(e=>e.date)).size || 1;
+  const totalOutstanding = totalDues();
+
+  document.getElementById('rep-monthlyBody').innerHTML = `
+    <div class="list-item"><div class="li-main sub">Active Customers</div><div class="li-right amt">${activeSuppliers}</div></div>
+    <div class="list-item"><div class="li-main sub">Total Milk</div><div class="li-right amt">${totalMilk.toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Avg Daily Collection</div><div class="li-right amt">${(totalMilk/daysInData).toFixed(1)} L</div></div>
+    <div class="list-item"><div class="li-main sub">Total Milk Value</div><div class="li-right amt">${rupee(totalValue)}</div></div>
+    <div class="list-item"><div class="li-main sub">Total Payments (this month)</div><div class="li-right amt">${rupee(totalPaid)}</div></div>
+    <div class="list-item"><div class="li-main sub"><b>Outstanding (all-time)</b></div><div class="li-right amt" style="color:var(--red);"><b>${rupee(totalOutstanding)}</b></div></div>
+  `;
+
+  const rows = suppliers.map(s=>{
+    const se = monthEntries.filter(e=>e.supplierId===s.id);
+    const milk = se.reduce((sum,e)=>sum+e.quantity,0);
+    const amt = se.reduce((sum,e)=>sum+e.amount,0);
+    const sp = monthPayments.filter(p=>p.supplierId===s.id).reduce((sum,p)=>sum+p.amount,0);
+    const bal = balanceAsOf(s.id, month + '-31');
+    return { name:s.name, code:s.code, milk, amt, sp, bal };
+  }).filter(r=>r.milk>0 || r.bal>0).sort((a,b)=>b.milk-a.milk);
+
+  document.getElementById('rep-supplierTable').innerHTML =
+    '<tr><th>Customer</th><th class="num">Milk (L)</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance (month end)</th></tr>' +
+    (rows.length ? rows.map(r=>`<tr><td>${esc(r.code)} ${esc(r.name)}</td><td class="num">${r.milk.toFixed(1)}</td><td class="num">${rupee(r.amt)}</td><td class="num">${rupee(r.sp)}</td><td class="num">${rupee(r.bal)}</td></tr>`).join('')
+      : '<tr><td colspan="5" style="color:var(--ink-soft);">No activity this month.</td></tr>');
+
+  const lockBtn = document.getElementById('rep-lockMonth');
+  const locked = isLocked(month + '-01');
+  lockBtn.textContent = locked ? '🔓 Unlock ' + fmtMonthLabel(month) : '🔒 Lock ' + fmtMonthLabel(month) + ' (finalize bills)';
+  lockBtn.onclick = ()=>{
+    if(locked){
+      showConfirm('Unlock month?', 'Entries for ' + fmtMonthLabel(month) + ' can be added, edited and deleted again.', async ()=>{
+        settings.lockedMonths = (settings.lockedMonths||[]).filter(m=>m!==month); await saveSettings(); renderMonthlyReport();
+      });
+    } else {
+      showConfirm('Lock month?', 'No milk entries can be added, edited or deleted for ' + fmtMonthLabel(month) + ' until you unlock it. Payments are still allowed.', async ()=>{
+        settings.lockedMonths = [...(settings.lockedMonths||[]), month]; await saveSettings(); renderMonthlyReport();
+      });
+    }
+  };
+  document.getElementById('rep-exportCsv').onclick = ()=>{
+    const csvRows = [['Customer Code','Customer Name','Milk (L)','Amount (Rs)','Paid this month (Rs)','Balance at month end (Rs)']];
+    rows.forEach(r=>csvRows.push([r.code, r.name, r.milk.toFixed(2), r.amt.toFixed(2), r.sp.toFixed(2), r.bal.toFixed(2)]));
+    downloadCSV(`MilkMitra_${month}.csv`, csvRows);
+  };
+}
+
+/* ---------- SETTINGS ---------- */
+function openSettings(){
+  document.getElementById('set-name').value = settings.milkmanName;
+  document.getElementById('set-upi').value = settings.myUpi || '';
+  document.getElementById('set-rate-buffalo').value = settings.rates.Buffalo;
+  document.getElementById('set-rate-cow').value = settings.rates.Cow;
+  document.getElementById('set-rate-other').value = settings.rates.Other;
+  document.getElementById('set-fatsnf').checked = settings.showFatSnf;
+  document.getElementById('set-dupcheck').checked = settings.preventDuplicates;
+  document.getElementById('set-autopdf').checked = settings.autoPaymentPdf !== false;
+  document.getElementById('settingsStatus').textContent = '';
+  document.getElementById('set-appVersion').textContent = APP_VERSION;
+  document.getElementById('set-lastBackup').textContent = settings.lastBackupAt ? fmtDate(isoLocal(new Date(settings.lastBackupAt))) : 'Never';
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsClose').addEventListener('click', ()=>document.getElementById('settingsOverlay').classList.add('hidden'));
+document.getElementById('set-save').addEventListener('click', async ()=>{
+  settings.milkmanName = document.getElementById('set-name').value.trim();
+  settings.myUpi = document.getElementById('set-upi').value.trim();
+  settings.rates.Buffalo = parseFloat(document.getElementById('set-rate-buffalo').value)||0;
+  settings.rates.Cow = parseFloat(document.getElementById('set-rate-cow').value)||0;
+  settings.rates.Other = parseFloat(document.getElementById('set-rate-other').value)||0;
+  settings.showFatSnf = document.getElementById('set-fatsnf').checked;
+  settings.preventDuplicates = document.getElementById('set-dupcheck').checked;
+  settings.autoPaymentPdf = document.getElementById('set-autopdf').checked;
+  await saveSettings();
+  document.getElementById('settingsStatus').textContent = 'Saved.';
+  renderHome();
+});
+document.getElementById('set-exportAll').addEventListener('click', async ()=>{
+  const rows = [['Date','Session','Customer Code','Customer Name','Animal','Quantity (L)','Rate','Amount']];
+  entries.forEach(e=>{ const s=getSupplier(e.supplierId); rows.push([e.date,e.session,s?s.code:'',s?s.name:'',e.animalType,e.quantity,e.rate,e.amount]); });
+  await downloadCSV('MilkMitra_all_entries.csv', rows);
+  await new Promise(r=>setTimeout(r,600));
+  const prows = [['Date','Customer Code','Customer Name','Amount','Mode','Reference']];
+  payments.forEach(p=>{ const s=getSupplier(p.supplierId); prows.push([p.date,s?s.code:'',s?s.name:'',p.amount,p.mode,p.reference]); });
+  await downloadCSV('MilkMitra_all_payments.csv', prows);
+});
+
+/* ---------- backup / restore (for transferring data to a new app version) ---------- */
+async function downloadJSON(filename, obj){
+  return offerFileSave(filename, new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'}));
+}
+function backupPayload(ts){
+  return { app:'MilkMitra', appVersion:APP_VERSION, backupVersion:1, exportedAt:ts, suppliers, entries, payments,
+    settings: Object.assign({}, settings, { lastBackupAt: ts }) };
+}
+function renderBackupReminder(){
+  const card = document.getElementById('backupReminderCard');
+  const hasData = suppliers.length || entries.length || payments.length;
+  if(!hasData){ card.style.display='none'; return; }
+  const daysSince = settings.lastBackupAt ? Math.floor((Date.now() - new Date(settings.lastBackupAt).getTime())/86400000) : Infinity;
+  if(daysSince < 3){ card.style.display='none'; return; }
+  card.style.display='block';
+  document.getElementById('backupReminderText').textContent = settings.lastBackupAt
+    ? `📦 Aapne ${daysSince} din se backup nahi liya. Naye version pe update karne se pehle backup zaroor le lein.`
+    : `📦 Aapne kabhi backup nahi liya. Data safe rakhne ke liye ek backup le lein.`;
+}
+document.getElementById('backupReminderBtn').addEventListener('click', async ()=>{
+  await doBackupDownload();
+  renderBackupReminder();
+});
+async function doBackupDownload(){
+  const ts = new Date().toISOString();
+  const r = await downloadJSON('MilkMitra_backup_'+todayISO()+'.json', backupPayload(ts));
+  if(r && r.ok){ settings.lastBackupAt = ts; await saveSettings(); }
+  return r;
+}
+document.getElementById('set-backupDownload').addEventListener('click', async ()=>{
+  const r = await doBackupDownload();
+  document.getElementById('settingsStatus').textContent = (r && r.ok) ? 'Backup file downloaded.' : ((r && r.message) || 'Backup was not saved.');
+  renderBackupReminder();
+});
+document.getElementById('set-backupShare').addEventListener('click', async ()=>{
+  const status = document.getElementById('settingsStatus');
+  const filename = 'MilkMitra_backup_'+todayISO()+'.json';
+  const ts = new Date().toISOString();
+  const blob = new Blob([JSON.stringify(backupPayload(ts), null, 2)], {type:'application/json'});
+  const markDone = async (msg)=>{ settings.lastBackupAt = ts; await saveSettings(); status.textContent = msg; renderBackupReminder(); };
+  await downloadsCapReady;
+  if(downloadsCap){
+    const result = await offerFileSave(filename, blob);
+    if(result.ok) await markDone('Backup ready to share.'); else status.textContent = result.message || 'Could not share the backup.';
+    return;
+  }
+  const file = new File([blob], filename, {type:'application/json'});
+  const canShareFiles = navigator.canShare && navigator.canShare({files:[file]});
+  if(navigator.share && canShareFiles){
+    try{
+      await navigator.share({ files:[file], title:'MilkMitra Backup', text:'MilkMitra data backup — restore this in the app after updating.' });
+      await markDone('Backup shared.');
+    }catch(err){
+      status.textContent = (err && err.name === 'AbortError') ? 'Share cancelled.' : 'Share failed — try Download Backup instead.';
+    }
+  } else {
+    status.textContent = 'Sharing files isn\'t supported in this browser — use "Download Backup" instead, then share that file from your Downloads/Files app to Gmail or Drive.';
+  }
+});
+/* validates and normalizes a backup file so tampered or malformed data cannot break (or inject into) the app */
+function sanitizeBackup(d){
+  const id = v => String(v ?? '').replace(/[^A-Za-z0-9_-]/g,'');
+  const str = (v, max) => String(v ?? '').slice(0, max || 200);
+  const num = (v, dflt) => { const n = Number(v); return Number.isFinite(n) ? n : (dflt || 0); };
+  const isDate = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v));
+  const animals = ['Buffalo','Cow','Other'];
+  const gen = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const sups = [], seenS = new Set();
+  (d.suppliers||[]).forEach(s=>{
+    if(!s || typeof s !== 'object') return;
+    const sid = id(s.id); if(!sid || seenS.has(sid)) return; seenS.add(sid);
+    const rates = {};
+    if(s.rates && typeof s.rates === 'object') animals.forEach(k=>{ const v = num(s.rates[k]); if(v > 0) rates[k] = v; });
+    sups.push({ id:sid, code:str(s.code,20), name:str(s.name), father:str(s.father), mobile:str(s.mobile,20), address:str(s.address,300),
+      animalType: ['Buffalo','Cow','Mixed','Other'].includes(s.animalType) ? s.animalType : 'Buffalo',
+      numAnimals:num(s.numAnimals), rates, rate: num(s.rate) > 0 ? num(s.rate) : null,
+      startDate: isDate(s.startDate) ? s.startDate : todayISO(), notes:str(s.notes,500), active: s.active !== false });
+  });
+  const ents = [], seenE = new Set();
+  (d.entries||[]).forEach(e=>{
+    if(!e || typeof e !== 'object' || !isDate(e.date)) return;
+    let eid = id(e.id); if(!eid || seenE.has(eid)) eid = gen(); seenE.add(eid);
+    ents.push({ id:eid, supplierId:id(e.supplierId), date:e.date,
+      session: e.session === 'Evening' ? 'Evening' : 'Morning',
+      animalType: animals.includes(e.animalType) ? e.animalType : 'Other',
+      quantity:num(e.quantity), fat: e.fat==null ? null : num(e.fat), snf: e.snf==null ? null : num(e.snf),
+      rate:num(e.rate), amount:num(e.amount), skipped:!!e.skipped, createdAt: str(e.createdAt,40) || new Date().toISOString() });
+  });
+  const pays = [], seenP = new Set();
+  (d.payments||[]).forEach(p=>{
+    if(!p || typeof p !== 'object' || !isDate(p.date)) return;
+    let pid = id(p.id); if(!pid || seenP.has(pid)) pid = gen(); seenP.add(pid);
+    pays.push({ id:pid, supplierId:id(p.supplierId), date:p.date, amount:num(p.amount), mode:str(p.mode,40) || 'Cash',
+      reference:str(p.reference,100), notes:str(p.notes,300), createdAt: str(p.createdAt,40) || new Date().toISOString() });
+  });
+  const st = (d.settings && typeof d.settings === 'object') ? d.settings : {};
+  const out = defaultSettings();
+  Object.assign(out, { milkmanName:str(st.milkmanName,80), myUpi:str(st.myUpi,80), showFatSnf:!!st.showFatSnf,
+    preventDuplicates: st.preventDuplicates !== false, autoPaymentPdf: st.autoPaymentPdf !== false,
+    lastBackupAt: (typeof st.lastBackupAt === 'string' && !isNaN(Date.parse(st.lastBackupAt))) ? st.lastBackupAt : null,
+    lockedMonths: Array.isArray(st.lockedMonths) ? st.lockedMonths.map(String).filter(m=>/^\d{4}-\d{2}$/.test(m)) : [] });
+  if(st.rates && typeof st.rates === 'object') animals.forEach(k=>{ out.rates[k] = num(st.rates[k], out.rates[k]); });
+  return { suppliers:sups, entries:ents, payments:pays, settings:out };
+}
+document.getElementById('set-backupRestore').addEventListener('click', ()=>{
+  document.getElementById('set-backupFile').value = '';
+  document.getElementById('set-backupFile').click();
+});
+document.getElementById('set-backupFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try{ data = JSON.parse(reader.result); }
+    catch(err){ document.getElementById('settingsStatus').textContent = 'Invalid backup file.'; return; }
+    if(!data || !Array.isArray(data.suppliers) || !Array.isArray(data.entries) || !Array.isArray(data.payments)){
+      document.getElementById('settingsStatus').textContent = 'This file is not a valid MilkMitra backup.'; return;
+    }
+    showConfirm('Restore this backup?', 'This will replace all current data on this device (customers, entries, payments, settings) with the data from the backup file. This cannot be undone.', async ()=>{
+      const clean = sanitizeBackup(data);
+      suppliers = clean.suppliers; entries = clean.entries; payments = clean.payments; settings = clean.settings;
+      await saveSuppliers(); await saveEntries(); await savePayments(); await saveSettings();
+      document.getElementById('settingsOverlay').classList.add('hidden');
+      nav('home');
+    });
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('set-reset').addEventListener('click', ()=>{
+  showConfirm('Clear all data?', 'This will permanently delete all customers, milk entries, payments and settings from this device.', async ()=>{
+    suppliers=[]; entries=[]; payments=[]; settings = defaultSettings();
+    await saveSuppliers(); await saveEntries(); await savePayments(); await saveSettings();
+    document.getElementById('settingsOverlay').classList.add('hidden');
+    nav('home');
+  });
+});
+
+/* ---------- confirm overlay ---------- */
+document.getElementById('confirmYes').addEventListener('click', ()=>{
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  if(confirmCallback) confirmCallback();
+  confirmCallback = null;
+});
+document.getElementById('confirmNo').addEventListener('click', ()=>{
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  confirmCallback = null;
+});
+
+/* ---------- PDF statements (browser print → Save as PDF) ---------- */
+function fmtMonthLabel(key){
+  const [y,m] = key.split('-');
+  return new Date(y, m-1, 1).toLocaleDateString(undefined,{month:'long', year:'numeric'});
+}
+/* filter can be:
+   {type:'all'}
+   {type:'month', month:'YYYY-MM'}
+   {type:'range', from:'YYYY-MM-DD'|null, to:'YYYY-MM-DD', label:'...'}   (from is exclusive, to is inclusive) */
+function getPaymentCycleRange(s, paymentId){
+  const pays = supplierPayments(s.id).sort((a,b)=> a.date===b.date ? (a.createdAt||'').localeCompare(b.createdAt||'') : a.date.localeCompare(b.date));
+  const idx = pays.findIndex(p=>p.id===paymentId);
+  if(idx===-1) return null;
+  const thisPay = pays[idx];
+  const prevPay = idx>0 ? pays[idx-1] : null;
+  return { from: prevPay ? prevPay.date : null, to: thisPay.date, payment: thisPay };
+}
+function buildStatementHtml(s, filter, pageBreak){
+  filter = filter || {type:'all'};
+  let list, pays, periodLabel;
+  if(filter.type==='month'){
+    const month = filter.month;
+    list = supplierEntries(s.id).filter(e => !month || monthKey(e.date)===month);
+    pays = supplierPayments(s.id).filter(p => !month || monthKey(p.date)===month);
+    periodLabel = month ? fmtMonthLabel(month) : 'All time';
+  } else if(filter.type==='range'){
+    list = supplierEntries(s.id).filter(e => (!filter.from || e.date > filter.from) && e.date <= filter.to);
+    pays = supplierPayments(s.id).filter(p => (!filter.from || p.date > filter.from) && p.date <= filter.to);
+    periodLabel = filter.label || ((filter.from ? fmtDate(filter.from)+' (after) to ' : 'Start to ') + fmtDate(filter.to));
+  } else {
+    list = supplierEntries(s.id).slice();
+    pays = supplierPayments(s.id).slice();
+    periodLabel = 'All time';
+  }
+  list = list.sort((a,b)=>a.date.localeCompare(b.date));
+  pays = pays.sort((a,b)=>a.date.localeCompare(b.date));
+  const totalMilk = list.reduce((a,e)=>a+e.quantity,0);
+  const totalAmt = list.reduce((a,e)=>a+e.amount,0);
+  const totalPaidPeriod = pays.reduce((a,p)=>a+p.amount,0);
+  let endISO = null;
+  if(filter.type==='month' && filter.month) endISO = filter.month + '-31';
+  else if(filter.type==='range') endISO = filter.to;
+  const overallBalance = endISO ? balanceAsOf(s.id, endISO) : supplierBalance(s.id).balance;
+  const balSuffix = endISO ? 'at period end' : 'all-time';
+
+  const rows = list.map(e => `<tr><td>${fmtDate(e.date)}</td><td>${e.session}</td><td>${e.animalType}</td><td class="num">${e.skipped?'Skipped':e.quantity}</td><td class="num">₹${e.rate}</td><td class="num">${rupee(e.amount)}</td></tr>`).join('')
+    || '<tr><td colspan="6" style="text-align:center;color:#777;">No milk entries in this period.</td></tr>';
+
+  const payRows = pays.map(p => `<tr><td>${fmtDate(p.date)}</td><td>${esc(p.mode)}</td><td>${esc(p.reference)||'—'}</td><td class="num">${rupee(p.amount)}</td></tr>`).join('')
+    || '<tr><td colspan="4" style="text-align:center;color:#777;">No payments in this period.</td></tr>';
+
+  return `
+    <div${pageBreak ? ' style="page-break-before:always;"' : ''}>
+    <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:12px;">
+      <div style="font-size:21px;font-weight:800;">${esc(settings.milkmanName || 'Chauhan Dairy')}</div>
+      <div style="font-size:12.5px;color:#555;letter-spacing:0.05em;">MILK DELIVERY STATEMENT</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;font-size:13px;">
+      <div><b>Customer:</b> ${esc(s.name)}<br><b>Customer ID:</b> ${esc(s.code)}${s.mobile ? '<br><b>Mobile:</b> '+esc(s.mobile) : ''}</div>
+      <div style="text-align:right;"><b>Period:</b> ${periodLabel}<br><b>Generated:</b> ${fmtDate(todayISO())}</div>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Daily Milk Record</div>
+    <table><thead><tr><th>Date</th><th>Session</th><th>Type</th><th class="num">Qty (L)</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>${rows}</tbody></table>
+    <div style="font-size:13px;font-weight:700;margin:16px 0 4px;">Payment Record</div>
+    <table><thead><tr><th>Date</th><th>Mode</th><th>Reference</th><th class="num">Amount</th></tr></thead><tbody>${payRows}</tbody></table>
+    <div style="margin-top:18px;font-size:13px;max-width:300px;margin-left:auto;">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Total Milk (this period)</span><b>${totalMilk.toFixed(1)} L</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Total Billed (this period)</span><b>${rupee(totalAmt)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;"><span>Paid (this period)</span><b>${rupee(totalPaidPeriod)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #111;margin-top:4px;"><span>${overallBalance<-0.5?'Advance Balance ('+balSuffix+')':'Outstanding Balance ('+balSuffix+')'}</span><b>${rupee(Math.abs(overallBalance))}</b></div>
+    </div>
+    </div>
+  `;
+}
+/* selectValue: 'all' | 'month:YYYY-MM' | 'payment:<paymentId>' */
+function resolveStatementFilter(s, selectValue){
+  if(selectValue && selectValue.startsWith('payment:')){
+    const range = getPaymentCycleRange(s, selectValue.slice(8));
+    if(range) return {type:'range', from:range.from, to:range.to,
+      label: (range.from ? 'After '+fmtDate(range.from)+' — ' : 'Up to ') + fmtDate(range.to) + ' (payment cycle)'};
+  }
+  if(selectValue && selectValue.startsWith('month:')){
+    return {type:'month', month: selectValue.slice(6)};
+  }
+  return {type:'all'};
+}
+function printCustomerStatement(customerId, selectValue){
+  const s = getSupplier(customerId);
+  if(!s) return;
+  const filter = resolveStatementFilter(s, selectValue);
+  document.getElementById('printArea').innerHTML = buildStatementHtml(s, filter, false);
+  window.print();
+}
+function printAllCustomerStatements(month){
+  const active = suppliers.filter(s =>
+    supplierEntries(s.id).some(e => !month || monthKey(e.date)===month) ||
+    supplierPayments(s.id).some(p => !month || monthKey(p.date)===month)
+  );
+  if(!active.length){ alert('No customer activity found for this period.'); return; }
+  document.getElementById('printArea').innerHTML = active.map((s,i)=>buildStatementHtml(s, month?{type:'month',month}:{type:'all'}, i>0)).join('');
+  window.print();
+}
+function renderPfStatementSelect(s){
+  const sel = document.getElementById('pf-stmtMonth');
+  if(!sel) return;
+  const pays = supplierPayments(s.id).sort((a,b)=> b.date===a.date ? (b.createdAt||'').localeCompare(a.createdAt||'') : b.date.localeCompare(a.date));
+  const payOptions = pays.map(p=>{
+    const range = getPaymentCycleRange(s, p.id);
+    const rangeLabel = (range.from ? 'after '+fmtDate(range.from) : 'from start') + ' → ' + fmtDate(range.to);
+    return `<option value="payment:${p.id}">🧾 ${rupee(p.amount)} paid ${fmtDate(p.date)} (${rangeLabel})</option>`;
+  }).join('');
+  const months = new Set(supplierEntries(s.id).map(e=>monthKey(e.date)));
+  months.add(monthKey(todayISO()));
+  const sorted = Array.from(months).sort().reverse();
+  const monthOptions = sorted.map(m=>`<option value="month:${m}">${fmtMonthLabel(m)}</option>`).join('');
+  sel.innerHTML = '<option value="all">All-time (complete history)</option>' +
+    (payOptions ? `<optgroup label="Payment-to-payment record">${payOptions}</optgroup>` : '') +
+    `<optgroup label="By month">${monthOptions}</optgroup>`;
+}
+function printMonthlyReport(){
+  const month = document.getElementById('rep-month').value || monthKey(todayISO());
+  const monthEntries = entries.filter(e=>monthKey(e.date)===month);
+  const monthPayments = payments.filter(p=>monthKey(p.date)===month);
+  const totalMilk = monthEntries.reduce((s,e)=>s+e.quantity,0);
+  const totalValue = monthEntries.reduce((s,e)=>s+e.amount,0);
+  const totalPaid = monthPayments.reduce((s,p)=>s+p.amount,0);
+  const totalOutstanding = totalDues();
+
+  const rows = suppliers.map(s=>{
+    const se = monthEntries.filter(e=>e.supplierId===s.id);
+    const milk = se.reduce((sum,e)=>sum+e.quantity,0);
+    const amt = se.reduce((sum,e)=>sum+e.amount,0);
+    const sp = monthPayments.filter(p=>p.supplierId===s.id).reduce((sum,p)=>sum+p.amount,0);
+    const bal = balanceAsOf(s.id, month + '-31');
+    return { name:s.name, code:s.code, milk, amt, sp, bal };
+  }).filter(r=>r.milk>0 || r.bal>0).sort((a,b)=>b.milk-a.milk);
+
+  const tableRows = rows.map(r=>`<tr><td>${esc(r.code)} ${esc(r.name)}</td><td class="num">${r.milk.toFixed(1)}</td><td class="num">${rupee(r.amt)}</td><td class="num">${rupee(r.sp)}</td><td class="num">${rupee(r.bal)}</td></tr>`).join('')
+    || '<tr><td colspan="5" style="text-align:center;color:#777;">No activity this month.</td></tr>';
+
+  document.getElementById('printArea').innerHTML = `
+    <div style="text-align:center;margin-bottom:18px;border-bottom:2px solid #111;padding-bottom:12px;">
+      <div style="font-size:21px;font-weight:800;">${esc(settings.milkmanName || 'Chauhan Dairy')}</div>
+      <div style="font-size:12.5px;color:#555;letter-spacing:0.05em;">MONTHLY COLLECTION REPORT — ${fmtMonthLabel(month)}</div>
+    </div>
+    <div style="font-size:13px;max-width:340px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Total Milk Delivered</span><b>${totalMilk.toFixed(1)} L</b></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Total Amount Billed</span><b>${rupee(totalValue)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:3px 0;"><span>Total Collected (this month)</span><b>${rupee(totalPaid)}</b></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid #111;margin-top:3px;"><span>Outstanding (all-time)</span><b>${rupee(totalOutstanding)}</b></div>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Customer-wise Breakdown</div>
+    <table><thead><tr><th>Customer</th><th class="num">Milk (L)</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance (month end)</th></tr></thead><tbody>${tableRows}</tbody></table>
+    <div style="margin-top:16px;font-size:11px;color:#777;">Generated on ${fmtDate(todayISO())}</div>
+  `;
+  window.print();
+}
+document.getElementById('pf-printStatement').addEventListener('click', ()=>{
+  if(!currentSupplierId) return;
+  const val = document.getElementById('pf-stmtMonth').value;
+  printCustomerStatement(currentSupplierId, val);
+});
+document.getElementById('rep-printMonthly').addEventListener('click', printMonthlyReport);
+document.getElementById('rep-printAllStatements').addEventListener('click', ()=>{
+  const month = document.getElementById('rep-month').value || monthKey(todayISO());
+  printAllCustomerStatements(month);
+});
+
+/* ---------- PAYMENT BILL (A4) ---------- */
+const dayMs = 86400000;
+function addDaysISO(iso, n){ const d = new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return isoLocal(d); }
+function fmtDay(iso){ return new Date(iso+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}); }
+function qrDataUrl(text){
+  try{
+    let qr = null;
+    for(let type=1; type<=40; type++){
+      try{ qr = qrcode(type,'M'); qr.addData(text); qr.make(); break; }catch(e){ qr = null; }
+    }
+    if(!qr) return '';
+    const div = document.createElement('div');
+    div.innerHTML = qr.createImgTag(6, 4);
+    const img = div.querySelector('img');
+    return img ? img.src : '';
+  }catch(e){ return ''; }
+}
+function billCalc(s, from, to){
+  const ents = supplierEntries(s.id), pays = supplierPayments(s.id);
+  const prevBal = round2(ents.filter(e=>e.date<from).reduce((a,e)=>a+e.amount,0) - pays.filter(p=>p.date<from).reduce((a,p)=>a+p.amount,0));
+  const inEnts = ents.filter(e=>e.date>=from && e.date<=to);
+  const inPays = pays.filter(p=>p.date>=from && p.date<=to);
+  const periodAmt = round2(inEnts.reduce((a,e)=>a+e.amount,0));
+  const periodPaid = round2(inPays.reduce((a,p)=>a+p.amount,0));
+  const totalMilk = inEnts.reduce((a,e)=>a+(e.skipped?0:e.quantity),0);
+  return { prevBal, inEnts, inPays, periodAmt, periodPaid, totalMilk, due: round2(prevBal + periodAmt - periodPaid) };
+}
+function buildBillHtml(s, o){
+  const c = billCalc(s, o.from, o.to);
+  const days = [];
+  for(let d=o.from, i=0; d<=o.to && i<400; d=addDaysISO(d,1), i++) days.push(d);
+  const rows = days.map((d,idx)=>{
+    const list = c.inEnts.filter(e=>e.date===d);
+    const sess = n => list.filter(e=>e.session===n);
+    const q = arr => arr.filter(e=>!e.skipped).reduce((a,e)=>a+e.quantity,0);
+    const has = arr => arr.length>0;
+    const cell = arr => !has(arr) ? '—' : (arr.every(e=>e.skipped) ? 'Absent' : (Math.round(q(arr)*100)/100));
+    const dayQ = q(list), dayAmt = round2(list.reduce((a,e)=>a+e.amount,0));
+    const rate = dayQ>0 ? round2(dayAmt/dayQ) : null;
+    const bg = idx%2 ? '#f7f7f4' : '#fff';
+    return `<tr style="background:${bg};"><td>${fmtDay(d)}</td><td class="n">${cell(sess('Morning'))}</td><td class="n">${cell(sess('Evening'))}</td><td class="n"><b>${dayQ>0?(Math.round(dayQ*100)/100):'—'}</b></td><td class="n">${rate!==null?'₹'+rate:'—'}</td><td class="n">${dayAmt>0?rupee(dayAmt):'—'}</td></tr>`;
+  }).join('');
+  const upiOn = o.showQr && settings.myUpi && c.due > 0.5;
+  const qrSrc = upiOn ? qrDataUrl(buildUpiUri(settings.myUpi, settings.milkmanName || 'Milk Payment', c.due, s.name+' - '+s.code+' bill')) : '';
+  const dueLabel = c.due < -0.5 ? 'Advance Credit / एडवांस' : 'Total Amount Due / कुल देय राशि';
+  const billNo = (s.code||'C')+'-'+o.to.replace(/-/g,'');
+  const line = (a,b,strong)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;${strong?'border-top:2px solid #111;margin-top:4px;padding-top:7px;font-size:15px;':''}"><span>${a}</span><b>${b}</b></div>`;
+  return `
+<div class="bill" style="font-family:Inter,Arial,sans-serif;color:#111;background:#fff;padding:6px 4px;font-size:12px;">
+<style>
+.bill table{width:100%;border-collapse:collapse;}
+.bill table th,.bill table td{border:1px solid #bbb !important;padding:2px 7px !important;font-size:11px !important;text-align:left;line-height:1.2 !important;}
+.bill table{margin-top:0 !important;}
+.bill table th{background:#14532d !important;color:#fff !important;border-color:#14532d !important;}
+.bill table th.n,.bill table td.n{text-align:right !important;}
+.bill{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.bill tr{page-break-inside:avoid;}
+</style>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #14532d;padding-bottom:10px;margin-bottom:12px;">
+    <div><div style="font-size:23px;font-weight:800;color:#14532d;">${esc(settings.milkmanName || 'Chauhan Dairy')}</div>
+    <div style="font-size:11px;color:#555;">Fresh milk delivery</div></div>
+    <div style="text-align:right;"><div style="font-size:18px;font-weight:800;letter-spacing:.04em;">MILK BILL / दूध का बिल</div>
+    <div style="font-size:11px;color:#555;">Bill No: ${esc(billNo)} · Date: ${fmtDate(todayISO())}</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;">
+    <div style="flex:1;border:1px solid #bbb;border-radius:6px;padding:8px 10px;">
+      <div style="font-size:10px;color:#777;text-transform:uppercase;">Bill to</div>
+      <div style="font-size:14px;font-weight:700;">${esc(s.name)}</div>
+      <div style="font-size:11.5px;color:#444;">ID: ${esc(s.code)}${s.mobile?' · '+esc(s.mobile):''}${s.address?'<br>'+esc(s.address):''}</div>
+    </div>
+    <div style="flex:1;border:1px solid #bbb;border-radius:6px;padding:8px 10px;">
+      <div style="font-size:10px;color:#777;text-transform:uppercase;">Billing period / अवधि</div>
+      <div style="font-size:13.5px;font-weight:700;">${fmtDate(o.from)} → ${fmtDate(o.to)}</div>
+      <div style="font-size:12px;margin-top:3px;">Due date / देय तिथि: <b style="color:#b91c1c;">${fmtDate(o.due)}</b></div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Date / तारीख</th><th class="n">Morning (L)</th><th class="n">Evening (L)</th><th class="n">Total (L)</th><th class="n">Rate</th><th class="n">Amount</th></tr></thead>
+    <tbody>${rows}
+    <tr style="background:#e8f3ec;"><td><b>Total</b></td><td></td><td></td><td class="n"><b>${(Math.round(c.totalMilk*100)/100)} L</b></td><td></td><td class="n"><b>${rupee(c.periodAmt)}</b></td></tr></tbody>
+  </table>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-top:14px;">
+    <div style="flex:1;font-size:11.5px;color:#444;">
+      ${qrSrc?`<div style="display:flex;gap:10px;align-items:center;"><img src="${qrSrc}" style="width:110px;height:110px;image-rendering:pixelated;border:1px solid #bbb;padding:4px;background:#fff;"><div><b>Pay by UPI</b><br>${esc(settings.myUpi)}<br><span style="color:#777;">Scan QR — amount ${rupee(c.due)} filled in</span></div></div>`
+      : (settings.myUpi && c.due>0.5 ? `<b>Pay by UPI:</b> ${esc(settings.myUpi)}` : '')}
+      ${o.note?`<div style="margin-top:8px;padding:6px 8px;background:#fff7e6;border-left:3px solid #b45309;">${esc(o.note)}</div>`:''}
+    </div>
+    <div style="width:290px;font-size:12.5px;">
+      ${line('Previous balance / पिछला बकाया', c.prevBal<-0.5 ? '−'+rupee(-c.prevBal)+' (adv)' : rupee(c.prevBal))}
+      ${line('This period milk / इस अवधि का दूध', rupee(c.periodAmt))}
+      ${line('Payments received / जमा', '− '+rupee(c.periodPaid))}
+      ${line(dueLabel, rupee(Math.abs(c.due)), true)}
+    </div>
+  </div>
+  <div style="margin-top:16px;text-align:center;font-size:10.5px;color:#777;border-top:1px solid #ddd;padding-top:6px;">Thank you / धन्यवाद — please pay by ${fmtDate(o.due)}. This is a computer-generated bill.</div>
+</div>`;
+}
+function billOpts(){
+  return {
+    from: document.getElementById('bill-from').value,
+    to: document.getElementById('bill-to').value,
+    due: document.getElementById('bill-due').value,
+    showQr: document.getElementById('bill-qr').value==='1',
+    note: document.getElementById('bill-note').value.trim()
+  };
+}
+function validBill(o){
+  const m = document.getElementById('billMsg');
+  if(!o.from || !o.to || !o.due){ m.innerHTML = '<div class="msg err">Please choose from, to and due date.</div>'; return false; }
+  if(o.from > o.to){ m.innerHTML = '<div class="msg err">"From" date must be before "To" date.</div>'; return false; }
+  if((new Date(o.to)-new Date(o.from))/dayMs > 366){ m.innerHTML = '<div class="msg err">Please pick a period of up to 1 year.</div>'; return false; }
+  m.innerHTML = ''; return true;
+}
+function refreshBillPreview(){
+  const s = getSupplier(currentSupplierId); if(!s) return;
+  const o = billOpts();
+  const box = document.getElementById('billPreviewBox'), pv = document.getElementById('billPreview');
+  if(!validBill(o)){ pv.innerHTML = ''; box.style.height = 'auto'; return; }
+  pv.innerHTML = buildBillHtml(s, o);
+  const scale = Math.min(1, box.clientWidth / 760);
+  pv.style.transform = 'scale('+scale+')';
+  box.style.height = Math.ceil(pv.offsetHeight*scale)+'px';
+}
+function setBillRange(kind){
+  const s = getSupplier(currentSupplierId); if(!s) return;
+  const today = todayISO();
+  const ents = supplierEntries(s.id).map(e=>e.date).sort();
+  let from = today.slice(0,8)+'01', to = today;
+  if(kind==='last'){
+    const d = new Date(today.slice(0,8)+'01T00:00:00'); d.setDate(0);
+    to = isoLocal(d); from = to.slice(0,8)+'01';
+  } else if(kind==='cycle'){
+    const lastPay = supplierPayments(s.id).map(p=>p.date).sort().pop();
+    from = lastPay ? addDaysISO(lastPay,1) : (ents[0] || from);
+    if(from > to) from = to;
+  } else if(kind==='all'){
+    from = ents[0] || from;
+  }
+  document.getElementById('bill-from').value = from;
+  document.getElementById('bill-to').value = to;
+  document.getElementById('bill-due').value = addDaysISO(to < today ? today : to, 7);
+  refreshBillPreview();
+}
+function renderBillView(){
+  const s = getSupplier(currentSupplierId);
+  if(!s){ nav('suppliers'); return; }
+  document.getElementById('billCustomer').textContent = s.code+' — '+s.name;
+  document.getElementById('bill-qr').value = settings.myUpi ? '1' : '0';
+  document.getElementById('bill-note').value = '';
+  setBillRange('month');
+}
+document.getElementById('pf-bill').addEventListener('click', ()=>{ if(currentSupplierId) nav('bill'); });
+document.getElementById('bill-back').addEventListener('click', ()=>nav('supplier-profile'));
+['bill-from','bill-to','bill-due','bill-qr','bill-note'].forEach(id=>{
+  document.getElementById(id).addEventListener(id==='bill-note'?'input':'change', refreshBillPreview);
+});
+document.querySelectorAll('[data-billrange]').forEach(b=>b.addEventListener('click', ()=>setBillRange(b.dataset.billrange)));
+window.addEventListener('resize', ()=>{ if(document.getElementById('view-bill').classList.contains('active')) refreshBillPreview(); });
+
+async function makeBillPdf(s, o){
+  if(typeof html2pdf === 'undefined') throw new Error('PDF library not loaded — connect to internet once and try again.');
+  const holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed;left:0;top:0;z-index:-1;width:760px;background:#fff;';
+  holder.innerHTML = buildBillHtml(s, o);
+  document.body.appendChild(holder);
+  try{
+    await new Promise(r=>setTimeout(r,60));
+    const blob = await html2pdf().set({ margin:[8,8,8,8], html2canvas:{scale:2, backgroundColor:'#ffffff'}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css','legacy'], avoid:'tr'} })
+      .from(holder).outputPdf('blob');
+    return blob;
+  } finally { document.body.removeChild(holder); }
+}
+function billFileName(s, o){ return `Bill_${s.code}_${s.name.replace(/[^\w]+/g,'_')}_${o.from}_to_${o.to}.pdf`; }
+function billWaText(s, o){
+  const c = billCalc(s, o.from, o.to);
+  let txt = `Namaste ${s.name} ji,\nDoodh ka bill (${fmtDate(o.from)} se ${fmtDate(o.to)}):\nDoodh: ${(Math.round(c.totalMilk*100)/100)} L\nKul rakam: ${rupee(Math.max(0,c.due))}\nAakhri tareekh: ${fmtDate(o.due)}`;
+  if(settings.myUpi) txt += `\nUPI: ${settings.myUpi}`;
+  return txt + `\nDhanyavaad — ${settings.milkmanName || 'Chauhan Dairy'}`;
+}
+async function withBusy(btn, label, fn){
+  const old = btn.textContent; btn.disabled = true; btn.textContent = label;
+  try{ await fn(); } finally { btn.disabled = false; btn.textContent = old; }
+}
+document.getElementById('bill-pdf').addEventListener('click', e=>{
+  const s = getSupplier(currentSupplierId), o = billOpts(); if(!s || !validBill(o)) return;
+  withBusy(e.currentTarget, 'Preparing PDF…', async ()=>{
+    try{
+      const blob = await makeBillPdf(s, o);
+      const r = await offerFileSave(billFileName(s, o), blob);
+      document.getElementById('billMsg').innerHTML = r.ok ? '<div class="msg ok">PDF saved.</div>' : '<div class="msg warn">'+esc(r.message||'')+'</div>';
+    }catch(err){ document.getElementById('billMsg').innerHTML = '<div class="msg err">'+esc(err.message||'Could not create PDF')+'</div>'; }
+  });
+});
+document.getElementById('bill-share').addEventListener('click', e=>{
+  const s = getSupplier(currentSupplierId), o = billOpts(); if(!s || !validBill(o)) return;
+  withBusy(e.currentTarget, 'Preparing PDF…', async ()=>{
+    const msg = document.getElementById('billMsg');
+    try{
+      const blob = await makeBillPdf(s, o);
+      const filename = billFileName(s, o);
+      const file = new File([blob], filename, {type:'application/pdf'});
+      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+        try{ await navigator.share({ files:[file], title:'Milk Bill — '+s.name, text: billWaText(s, o) }); msg.innerHTML = '<div class="msg ok">Choose WhatsApp to send the bill.</div>'; return; }
+        catch(err){ if(err && err.name==='AbortError'){ msg.innerHTML = '<div class="msg warn">Share cancelled.</div>'; return; } }
+      }
+      // Fallback (desktop / unsupported): save the PDF, then open WhatsApp chat with the message
+      await offerFileSave(filename, blob);
+      const waUrl = 'https://wa.me/'+waNumber(s.mobile)+'?text='+encodeURIComponent(billWaText(s, o));
+      msg.innerHTML = '<div class="msg ok">PDF saved. Tap below to open WhatsApp, then attach the saved PDF (📎 → Document) and send.<br><a href="'+esc(waUrl)+'" target="_blank" rel="noopener" class="btn small blue" style="display:inline-block;margin-top:8px;text-decoration:none;">💬 Open WhatsApp</a></div>';
+    }catch(err){ msg.innerHTML = '<div class="msg err">'+esc(err.message||'Could not create PDF')+'</div>'; }
+  });
+});
+document.getElementById('bill-print').addEventListener('click', ()=>{
+  const s = getSupplier(currentSupplierId), o = billOpts(); if(!s || !validBill(o)) return;
+  document.getElementById('printArea').innerHTML = buildBillHtml(s, o);
+  window.print();
+});
+
+/* ---------- multi-tab sync, back button, day rollover ---------- */
+window.addEventListener('storage', async e=>{
+  if(e.key && !Object.values(KEYS).includes(e.key)) return;
+  await loadAll();
+  if(['home','suppliers','payments','reports'].includes(currentView)) nav(currentView, true);
+});
+window.addEventListener('popstate', e=>{
+  ['settingsOverlay','confirmOverlay'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  nav((e.state && e.state.v) || 'home', true);
+});
+let lastDay = todayISO();
+function checkDayChange(){
+  const t = todayISO();
+  if(t === lastDay) return;
+  const old = lastDay; lastDay = t;
+  document.getElementById('headerDate').textContent = fmtDate(t);
+  const bk = document.getElementById('bk-date'); if(bk.value === old) bk.value = t;
+  const md = document.getElementById('me-date'); if(md.value === old && !editingEntryId) md.value = t;
+  if(currentView === 'home') renderHome();
+  if(currentView === 'bulk') renderBulkList();
+  if(currentView === 'milk') renderTodayEntries();
+}
+setInterval(checkDayChange, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkDayChange(); });
+
+/* ---------- init ---------- */
+(async function init(){
+  await loadAll();
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){ navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).catch(()=>{}); }
+  if(!suppliers.length && !entries.length){
+    // first-time nudge
+    setTimeout(()=>{ if(!settings.milkmanName) openSettings(); }, 400);
+  }
+  try{ history.replaceState({v:'home'}, ''); }catch(e){}
+  nav('home');
+})();
+
+</script>
+<div id="printArea"></div>
+
+<style>
+@page{ size:A4; margin:10mm; }
+@media print {
+  body > *:not(#printArea){ display:none !important; }
+  #printArea{ display:block !important; padding:24px; font-family:'Inter',sans-serif; color:#111; background:#fff; }
+  #printArea table{ width:100%; border-collapse:collapse; margin-top:10px; }
+  #printArea th, #printArea td{ border:1px solid #999; padding:6px 8px; font-size:12px; text-align:left; }
+  #printArea th.num, #printArea td.num{ text-align:right; }
+}
+@media screen { #printArea{ display:none; } }
+</style>
+
+</body>
+</html>
